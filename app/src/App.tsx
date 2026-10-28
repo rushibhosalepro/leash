@@ -4,6 +4,7 @@ import { useVault } from './useVault'
 import { Header } from './components/Header'
 import { Wallet } from './components/Wallet'
 import { Settings } from './components/Settings'
+import { DeployVault } from './components/DeployVault'
 import { ConnectAgent } from './components/ConnectAgent'
 import { useNetwork, addressUrl } from './network'
 import { shortAddr } from './leash-contract'
@@ -51,9 +52,7 @@ export default function App() {
 
       <main className="max-w-6xl mx-auto px-4 py-6">
         {!network.vault ? (
-          <div className="py-24 text-center text-sm" style={{ color: 'var(--subtle)' }}>
-            Not live on {network.label.toLowerCase()} yet.
-          </div>
+          <DeployVault />
         ) : (
           <>
           <VaultLabel />

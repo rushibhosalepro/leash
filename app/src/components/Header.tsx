@@ -1,26 +1,16 @@
 import { ConnectKitButton } from 'connectkit'
 import { Shield, Settings as SettingsIcon } from 'lucide-react'
-import { NETWORKS, LIVE_NETWORKS, useNetwork } from '@/network'
+import { NETWORKS, useNetwork, type NetworkId } from '@/network'
 import { useVault } from '@/useVault'
 import { shortAddr } from '@/leash-contract'
 
 function NetworkSwitch() {
   const { network, setNetwork } = useNetwork()
 
-  // Only one network has a vault: just say which one we are on.
-  if (LIVE_NETWORKS.length < 2) {
-    return (
-      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium"
-        style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--ink-2)' }}>
-        <span className="w-1.5 h-1.5 rounded-full" style={{ background: network.chain.testnet ? 'var(--held)' : 'var(--paid)' }} />
-        {network.chain.name}
-      </div>
-    )
-  }
-
+  // Both networks stay reachable so the owner can deploy a vault on one that has none yet.
   return (
     <div className="flex p-0.5 rounded-lg text-xs" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-      {LIVE_NETWORKS.map(id => (
+      {(Object.keys(NETWORKS) as NetworkId[]).map(id => (
         <button
           key={id}
           onClick={() => setNetwork(id)}
@@ -30,7 +20,7 @@ function NetworkSwitch() {
             color: network.id === id ? 'var(--on-accent)' : 'var(--muted)',
           }}
         >
-          {NETWORKS[id].label}
+          {NETWORKS[id].label}{!NETWORKS[id].vault && <span className="ml-1 opacity-60">· set up</span>}
         </button>
       ))}
     </div>

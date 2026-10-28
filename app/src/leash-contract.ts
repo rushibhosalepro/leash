@@ -2,6 +2,8 @@ import { parseAbi, type Abi } from 'viem'
 import artifact from '../contracts/out/Leash.sol/Leash.json'
 
 export const LEASH_ABI = artifact.abi as Abi
+/** Creation bytecode compiled and tested in Arc Studio; the owner deploys it from their own wallet. */
+export const LEASH_BYTECODE = artifact.bytecode.object as `0x${string}`
 import { requireChain } from '@/onchain-facts'
 
 export const LEASH_CHAIN_ID = 5042002 // Arc Testnet

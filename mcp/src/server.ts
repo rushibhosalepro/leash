@@ -5,7 +5,7 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js'
 import { z } from 'zod'
-import { AGENT, VAULT, getRules, checkPayee, checkPayment, pay, noteOnPayment, paymentStatus, pendingForOwner, recentSpending, listPayeesWithStatus } from './leash'
+import { AGENT, VAULT, ON_MAINNET, getRules, checkPayee, checkPayment, pay, noteOnPayment, paymentStatus, pendingForOwner, recentSpending, listPayeesWithStatus } from './leash'
 import { recentAttempts } from './db'
 import { listPayees, upsertPayee, removePayee, resolvePayee } from './payees'
 
@@ -111,7 +111,7 @@ function tokenMatches(candidate: string) {
 // The web app reads the link from here to show it in its header. Only the local app origins may read it.
 const APP_ORIGINS = (process.env.APP_ORIGINS ?? 'http://localhost:5173,http://localhost:5174').split(',')
 const link = () => `http://127.0.0.1:${PORT}/mcp/${TOKEN}`
-const linkInfo = () => ({ link: LINK_ON ? link() : null, on: LINK_ON, agent: AGENT, vault: VAULT })
+const linkInfo = () => ({ link: LINK_ON ? link() : null, on: LINK_ON, agent: AGENT, vault: VAULT, network: ON_MAINNET ? 'mainnet' : 'testnet' })
 
 // Endpoints for the web app (/link, /payees). Only the local app origins may call them; the agent never does.
 async function appApi(req: Request, url: URL): Promise<Response> {
@@ -181,5 +181,5 @@ Bun.serve({
 })
 
 console.log(`Leash MCP listening on 127.0.0.1:${PORT}`)
-console.log(`Vault ${VAULT}, agent ${AGENT}`)
+console.log(`${ON_MAINNET ? 'Arc MAINNET' : 'Arc testnet'} · vault ${VAULT} · agent ${AGENT}`)
 console.log('Agent link: shown in the web app header, or http://127.0.0.1:' + PORT + '/mcp/<MCP_TOKEN from mcp/.env>')

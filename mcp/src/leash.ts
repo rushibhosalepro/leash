@@ -8,7 +8,7 @@ import {
 import { privateKeyToAccount } from 'viem/accounts'
 import { listPayees, nameOf } from './payees'
 import { logAttempt, addNote, findAttempt, recentAttempts } from './db'
-import { arcTestnet } from 'viem/chains'
+import { arc, arcTestnet } from 'viem/chains'
 
 const artifactPath = new URL('../../app/contracts/out/Leash.sol/Leash.json', import.meta.url)
 export const LEASH_ABI = JSON.parse(readFileSync(artifactPath, 'utf8')).abi as Abi
@@ -34,7 +34,10 @@ const NATIVE_DECIMALS = 18
 export const toNative = (usdc: string) => parseUnits(usdc, NATIVE_DECIMALS)
 export const toUsdc = (native: bigint) => formatUnits(native, NATIVE_DECIMALS)
 
-export const EXPLORER = 'https://testnet.arcscan.app'
+// LEASH_NETWORK=mainnet points the server at Arc mainnet; anything else is testnet.
+export const ON_MAINNET = process.env.LEASH_NETWORK === 'mainnet'
+const CHAIN = ON_MAINNET ? arc : arcTestnet
+export const EXPLORER = ON_MAINNET ? 'https://explorer.arc.io' : 'https://testnet.arcscan.app'
 const OUTCOMES = ['paid', 'held', 'blocked'] as const
 
 function required(name: string): string {
@@ -43,15 +46,15 @@ function required(name: string): string {
   return v
 }
 
-export const VAULT = required('LEASH_ADDRESS') as Hex
-export const FROM_BLOCK = BigInt(process.env.LEASH_FROM_BLOCK ?? '0')
+export const VAULT = required(ON_MAINNET ? 'LEASH_MAINNET_ADDRESS' : 'LEASH_ADDRESS') as Hex
+export const FROM_BLOCK = BigInt((ON_MAINNET ? process.env.LEASH_MAINNET_FROM_BLOCK : process.env.LEASH_FROM_BLOCK) ?? '0')
 const account = privateKeyToAccount(required('AGENT_PRIVATE_KEY') as Hex)
 export const AGENT = account.address
 
 // The public Arc RPC rate-limits; fall through every endpoint viem lists.
-const transport = fallback(arcTestnet.rpcUrls.default.http.map(url => http(url, { retryCount: 3, retryDelay: 400 })))
-const pub = createPublicClient({ chain: arcTestnet, transport })
-const wallet = createWalletClient({ chain: arcTestnet, transport, account })
+const transport = fallback(CHAIN.rpcUrls.default.http.map(url => http(url, { retryCount: 3, retryDelay: 400 })))
+const pub = createPublicClient({ chain: CHAIN, transport })
+const wallet = createWalletClient({ chain: CHAIN, transport, account })
 
 const read = <T>(functionName: string, args: unknown[] = []) =>
   pub.readContract({ address: VAULT, abi: LEASH_ABI, functionName, args }) as Promise<T>
@@ -89,7 +92,7 @@ export async function getRules() {
   ])
   const [agent, perPaymentCap, dailyCap, maxPerHour] = policy
   return {
-    network: 'Arc Testnet',
+    network: CHAIN.name,
     vault: VAULT,
     owner,
     agent,

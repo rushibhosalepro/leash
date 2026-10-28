@@ -35,14 +35,31 @@ export const NETWORKS: Record<NetworkId, Network> = {
 }
 
 const STORAGE_KEY = 'leash.network'
+const vaultKey = (id: NetworkId) => `leash.vault.${id}`
 
-/** Networks with a deployed vault. The UI only offers these. */
+/**
+ * A vault the owner deployed from this browser (the Deploy vault screen) is remembered here until its address is
+ * added to NETWORKS above. Applied once at load, before anything reads NETWORKS.
+ */
+for (const id of Object.keys(NETWORKS) as NetworkId[]) {
+  if (NETWORKS[id].vault) continue
+  try {
+    const saved = JSON.parse(localStorage.getItem(vaultKey(id)) ?? 'null') as { vault: `0x${string}`; fromBlock: string } | null
+    if (saved?.vault) Object.assign(NETWORKS[id], { vault: saved.vault, fromBlock: BigInt(saved.fromBlock) })
+  } catch { /* storage unavailable or malformed */ }
+}
+
+export function rememberVault(id: NetworkId, vault: `0x${string}`, fromBlock: bigint) {
+  try { localStorage.setItem(vaultKey(id), JSON.stringify({ vault, fromBlock: fromBlock.toString() })) } catch { /* storage unavailable */ }
+}
+
+/** Networks with a deployed vault. */
 export const LIVE_NETWORKS = (Object.keys(NETWORKS) as NetworkId[]).filter(id => NETWORKS[id].vault)
 
 function initialNetwork(): NetworkId {
   try {
     const saved = localStorage.getItem(STORAGE_KEY)
-    if ((saved === 'testnet' || saved === 'mainnet') && LIVE_NETWORKS.includes(saved)) return saved
+    if (saved === 'testnet' || saved === 'mainnet') return saved
   } catch { /* storage unavailable */ }
   return LIVE_NETWORKS[0] ?? 'testnet'
 }
