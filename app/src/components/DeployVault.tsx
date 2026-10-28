@@ -7,6 +7,7 @@ import { ShieldCheck } from 'lucide-react'
 import { LEASH_ABI, LEASH_BYTECODE, displayToNative, shortAddr, walletErrorMessage } from '@/leash-contract'
 import { useNetwork, rememberVault, addressUrl, txUrl } from '@/network'
 import { useAgentLink } from '@/useAgentLink'
+import { BridgeToArc } from './BridgeToArc'
 
 const card = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20 } as const
 const field = { background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--ink)', borderRadius: 12 } as const
@@ -98,7 +99,7 @@ export function DeployVault() {
 
           {balance === 0n && (
             <div className="text-sm p-3" style={{ background: 'var(--held-bg)', borderRadius: 12, color: 'var(--ink-2)' }}>
-              This wallet has no USDC on Arc {network.label}. On Arc, fees are paid in USDC too, so you need some to deploy (about $0.10 covers it) plus whatever you want to put in the vault. Bring USDC onto Arc first (Arc’s CCTP bridge from another chain), then come back.
+              This wallet has no USDC on Arc {network.label}. On Arc, fees are paid in USDC too, so you need some to deploy (about $0.10 covers it) plus whatever you want to put in the vault. Bring USDC onto Arc first with the bridge below, then deploy.
             </div>
           )}
           {tooMuch && balance > 0n && (
@@ -121,6 +122,8 @@ export function DeployVault() {
           )}
         </div>
       )}
+
+      <BridgeToArc />
     </div>
   )
 }
