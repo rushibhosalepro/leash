@@ -142,5 +142,93 @@
         "Blocked (nothing moves): the payee is blocked or the vault is frozen."
       ]
     }
+  },
+  {
+    "phase": "b1",
+    "step": "Agent lists its payees",
+    "expected": "weather API, activated",
+    "at": "2026-10-28T10:40:39.552Z",
+    "tool": "leash_list_payees",
+    "args": {},
+    "result": {
+      "note": "You can pay these payees up to their per-payment limit, within the daily limit. Anyone else is held for the owner.",
+      "payees": [
+        {
+          "name": "weather API",
+          "address": "0x7F3E00000000000000000000000000000000c19a",
+          "status": "can_pay",
+          "limit_per_payment_usdc": null
+        }
+      ]
+    }
+  },
+  {
+    "phase": "b1",
+    "step": "Saved payee, by name: $0.05 to weather API",
+    "expected": "Paid",
+    "at": "2026-10-28T10:40:41.400Z",
+    "tool": "leash_pay",
+    "args": {
+      "payee": "weather API",
+      "amount_usdc": "0.05",
+      "reason": "Demo: forecast for the user’s trip",
+      "note": "Paid by name: the agent never typed an address."
+    },
+    "result": {
+      "outcome": "paid",
+      "payment_id": "3",
+      "rule": null,
+      "why": null,
+      "amount_usdc": "0.05",
+      "payee": "0x7F3E00000000000000000000000000000000c19a",
+      "payee_name": "weather API",
+      "tx": "0x7bd07b10829410c13463e78392ab3470d36fe03cf16791bed32be854b7981254",
+      "explorer": "https://testnet.arcscan.app/tx/0x7bd07b10829410c13463e78392ab3470d36fe03cf16791bed32be854b7981254",
+      "log_id": "a4",
+      "note": "Paid by name: the agent never typed an address."
+    }
+  },
+  {
+    "phase": "b1",
+    "step": "Unknown payee: $0.05 to an address the owner never saved",
+    "expected": "Held: not one of the owner’s payees",
+    "at": "2026-10-28T10:40:42.816Z",
+    "tool": "leash_pay",
+    "args": {
+      "payee": "0x51aa0000000000000000000000000000000f9e83",
+      "amount_usdc": "0.05",
+      "reason": "Demo: a site the agent found on its own"
+    },
+    "result": {
+      "outcome": "held",
+      "payment_id": "4",
+      "rule": "allowlist",
+      "why": "not one of the owner’s saved payees",
+      "amount_usdc": "0.05",
+      "payee": "0x51Aa0000000000000000000000000000000F9E83",
+      "payee_name": null,
+      "tx": "0x2492b0a21436433c3c32cbb3779640001f19e486c9667fed5f6b10e2964af241",
+      "explorer": "https://testnet.arcscan.app/tx/0x2492b0a21436433c3c32cbb3779640001f19e486c9667fed5f6b10e2964af241",
+      "log_id": "a5",
+      "note": null
+    }
+  },
+  {
+    "phase": "b1",
+    "step": "Agent checks what waits for the owner",
+    "expected": "the held payment above",
+    "at": "2026-10-28T10:40:43.017Z",
+    "tool": "leash_get_pending",
+    "args": {},
+    "result": [
+      {
+        "payment_id": "4",
+        "payee": "0x51Aa0000000000000000000000000000000F9E83",
+        "payee_name": null,
+        "amount_usdc": "0.05",
+        "reason": "Demo: a site the agent found on its own",
+        "held_because": "not one of the owner’s saved payees"
+      }
+    ]
   }
 ]

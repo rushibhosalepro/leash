@@ -11,7 +11,7 @@ import { arcTestnet } from 'viem/chains'
 import { LEASH_ABI, VAULT, EXPLORER } from './leash'
 
 const phase = process.argv[2]
-if (phase !== 'a' && phase !== 'b') throw new Error('Usage: bun run src/demo.ts a|b')
+if (!['a', 'b', 'b1'].includes(phase)) throw new Error('Usage: bun run src/demo.ts a|b|b1')
 
 const OUT = new URL('../demo-results.json', import.meta.url)
 const results: Record<string, unknown>[] = existsSync(OUT) ? JSON.parse(readFileSync(OUT, 'utf8')) : []
@@ -61,6 +61,16 @@ if (phase === 'a') {
   1. Add payee "Weather API", address <a wallet you control>, up to $0.10 per payment
   2. Add payee "Data reseller", address ${SPAM}, then press Block
   3. In Payments, Approve the held $2.00 request (optional: shows the owner releasing it)`)
+}
+
+// b1: the part of phase b that needs only an activated payee (no per-payee limit or blocked payee yet).
+if (phase === 'b1') {
+  record('Agent lists its payees', 'weather API, activated', await tool('leash_list_payees'))
+  record('Saved payee, by name: $0.05 to weather API', 'Paid',
+    await tool('leash_pay', { payee: 'weather API', amount_usdc: '0.05', reason: 'Demo: forecast for the user’s trip', note: 'Paid by name: the agent never typed an address.' }))
+  record('Unknown payee: $0.05 to an address the owner never saved', 'Held: not one of the owner’s payees',
+    await tool('leash_pay', { payee: UNKNOWN_B, amount_usdc: '0.05', reason: 'Demo: a site the agent found on its own' }))
+  record('Agent checks what waits for the owner', 'the held payment above', await tool('leash_get_pending'))
 }
 
 if (phase === 'b') {

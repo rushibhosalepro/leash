@@ -77,7 +77,7 @@ function PayeeRow({ p, limit, isOwner }: { p: PayeeEntry; limit?: bigint; isOwne
           <div className="text-xs flex flex-wrap gap-x-2" style={{ color: 'var(--subtle)' }}>
             <a href={addressUrl(network, p.address)} target="_blank" rel="noopener noreferrer" className="mono">{shortAddr(p.address)}</a>
             <span style={{ color: limit ? 'var(--ink-2)' : 'var(--subtle)' }}>
-              {limit ? `up to ${money(limit)} per payment` : p.status === 'trusted' ? 'no per-payment limit (daily limit applies)' : 'not activated: connect the owner wallet to activate and set a limit'}
+              {limit ? `up to ${money(limit)} per payment` : p.status === 'trusted' ? 'no per-payment limit (daily limit applies)' : isOwner ? 'not activated yet: click Activate, then set a Limit' : 'not activated: connect the owner wallet to activate and set a limit'}
             </span>
           </div>
         </div>
