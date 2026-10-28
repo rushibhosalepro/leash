@@ -1,0 +1,12 @@
+Two more fixes, then prove it on the real testnet.
+
+1) Live Ledger memo events are wrong. Arc's Memo contract (0x5294E9927c3306DcBaDb03fe70b92e01cCede505) emits
+   `event Memo(address indexed sender, address indexed target, bytes32 callDataHash, bytes32 indexed memoId, bytes memo, uint256 memoIndex)`
+   and `event BeforeMemo(uint256 indexed memoIndex)`. There is no `MemoSent` event. Read `Memo` logs filtered by target = Leash, decode `memo` as UTF-8, and attach it to the Leash event in the SAME transaction hash. Do not swallow errors silently: if the memo query fails, show a small "memo lookup failed" note in the ledger.
+
+2) Run the corpus ON-CHAIN against the deployed Leash at 0xb1d92345e1cb250552ce04338728c66bebad86ab, not a fork:
+   - Use small amounts so the deployer wallet can afford it: fund the vault with what the deployer can spare (use the faucet if needed) and scale every corpus amount down proportionally (e.g. caps of 0.05 / 0.2 USDC) while keeping the same 50 labels.
+   - Broadcast every case as a real transaction. For at least 5 of the in-policy cases, route the call through the Memo contract so memos exist on-chain.
+   - Write the results to `corpus-results.json` in the workspace: for each case its label, expected outcome, actual outcome, tx hash. Plus totals Paid / Held / Blocked / WRONG.
+   - Leave the vault frozen=false at the end and print the final on-chain values of paidAlone, heldCount, blockedCount.
+Then rebuild and recheck lint/typecheck.

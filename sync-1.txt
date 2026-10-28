@@ -1,0 +1,11 @@
+I fixed a crash in the app locally and am uploading the fixed files. Keep them exactly as uploaded (do not rewrite them); only fix something if lint or typecheck fails, and tell me what you changed.
+
+What was wrong: as soon as a wallet connected, the whole page went blank. viem returns the public `policy()` getter as a tuple [agent, perPaymentCap, dailyCap, maxPerHour], but OwnerView and AgentSimulator cast it to an object, so `policy.agent` was undefined and `shortAddr(undefined)` threw; there was no error boundary, so the React root unmounted. `autonomyRate()` was also still read as 2 values after it changed to 3.
+
+The fix:
+- src/leash-contract.ts: `readPolicy()` and `readAutonomy()` decoders; `shortAddr` tolerates undefined.
+- src/components/OwnerView.tsx and src/components/AgentSimulator.tsx: use the decoders; autonomy = paidAlone / (paidAlone + held), blocked shown separately.
+- src/main.tsx: an ErrorBoundary around <App/> so a render error shows a message instead of a blank page.
+- src/config.ts: batched reads + multicall + fallback over the four public Arc testnet RPCs (the single endpoint was returning HTTP 429 under the ledger's polling).
+
+Run lint and typecheck, then restart the preview.

@@ -1,0 +1,12 @@
+The corpus wallet's USDC was NOT burned in gas. I checked testnet.arcscan.app: across 32 transactions it paid only 0.32 USDC in fees. The rest is in vaults it deployed and still owns:
+- 0x5a70b756304602E3569FDB5Fa50333b55fE56C17  holds 2 USDC (earlier attempt)
+- 0x820475Eed108Ffe8005A28f75DBdef56096Cb8E6  holds 1 USDC (earlier attempt)
+- 0xb1dc5Ebf7993428da0E53764baD49bE2258402B4  current vaultMain (0.35 deposited, 23 corpus txs already sent, 5 via Memo)
+- 0x417B03c47Bd7a86f3fB562f95db7E6eC5433768F  current vaultDaily (0.35 deposited)
+
+Do this, using the corpus wallet 0x0513FCCb398c181BB73F71Ba45E3336f5A32Ef4d:
+1) Call withdrawAll() on 0x5a70… and 0x8204… to recover the 3 USDC to the corpus wallet. Print the wallet balance after.
+2) Make the corpus runner RESUMABLE: before sending a case, check whether it already has a tx on-chain (read the vault's events / request ids) so the 23 cases already sent are recorded with their existing tx hashes, not resent. Reuse vaultMain 0xb1dc… and vaultDaily 0x417B… instead of deploying new vaults.
+3) Before every transaction, check the wallet balance can cover it; if not, stop and write what is done so far. Never deploy a new funded vault without first withdrawing from the previous one.
+4) Finish the remaining cases on-chain, write corpus-results.json (label, expected, actual, tx hash per case, totals Paid / Held / Blocked / WRONG, vault addresses), and print the on-chain paidAlone / heldCount / blockedCount for both vaults.
+5) Add the recovered-funds incident to README under "What broke and how it was fixed" in one honest paragraph.

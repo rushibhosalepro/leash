@@ -1,0 +1,16 @@
+node_modules/
+app/node_modules/
+# Compiled output is ignored except the Leash artifact, which the app and the MCP server load at runtime.
+app/contracts/out/*
+!app/contracts/out/Leash.sol/
+app/contracts/cache/
+app/out/
+app/cache/
+app/dist/
+.env*
+build-*.log
+build-*.json
+fix-*.txt.bak
+mcp/leash.db
+mcp/leash.db-*
+.arc-studio/

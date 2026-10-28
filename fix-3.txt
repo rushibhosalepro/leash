@@ -1,0 +1,11 @@
+The corpus runner wallet 0x0513FCCb398c181BB73F71Ba45E3336f5A32Ef4d is now funded with 4 USDC on Arc Testnet (I sent it manually). Continue:
+
+1) Run scripts/run-corpus-onchain.ts for real on Arc Testnet with that wallet. Every case must be a broadcast transaction. Route at least 5 in-policy payments through the Memo contract (0x5294E9927c3306DcBaDb03fe70b92e01cCede505). Save corpus-results.json (label, expected, actual, tx hash per case, plus totals Paid / Held / Blocked / WRONG and both vault addresses). Do not fall back to a fork or simulation; if a transaction fails, record it as a failure in the file.
+
+2) Then deploy the DEMO Leash for the app with:
+   owner_ = 0x586664F50674c2f93767D249902e872eb6738ea0   (my MetaMask wallet)
+   agent  = 0x586664F50674c2f93767D249902e872eb6738ea0   (same wallet for now; I will move the agent to a second account with setPolicy)
+   perPaymentCap = 1 USDC, dailyCap = 5 USDC, maxPerHour = 10
+   Point src/leash-contract.ts at this new address and rebuild. Do not send any funds into it; I will deposit from MetaMask.
+
+3) Update AGENTS.md and README.md with both vault addresses from the corpus run, the demo vault address, and the corpus totals.

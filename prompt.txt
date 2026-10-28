@@ -1,0 +1,21 @@
+Build "Leash": a USDC spending account for AI agents on Arc. The agent pays on its own inside the rules; anything outside the rules is held onchain until a human decides. Use native USDC (gas token, 18 decimals) via payable/value transfers, follow Arc's EVM differences (no sends to address(0)), and attach a reason to every payment with Arc's Memo contract if available.
+
+Smart contract `Leash.sol` (one vault per owner+agent pair, or a factory):
+- Owner deposits USDC and sets a policy: agent address, per-payment cap, daily cap, payee allowlist, rate limit (max payments per hour).
+- pay(address payee, uint256 amount, string reason) called by the agent:
+  - Inside policy -> pays immediately; emits Paid(id, payee, amount, reason).
+  - Outside policy -> nothing moves; creates a Held request; emits Held(id, payee, amount, reason, ruleBroken).
+  - Hard violations (vault frozen, payee on a denylist) -> reverts with Blocked(ruleBroken); no request created.
+- approve(id, bool rememberPayee, uint256 newCap) by owner: pays the held request; optionally adds payee to the allowlist and/or raises the cap (this is how the agent earns autonomy).
+- deny(id) by owner. freeze()/unfreeze() by owner. withdraw by owner.
+- Onchain counters: paidAlone, held, approved, denied, blocked, so the autonomy rate (paidAlone / total) is readable from the contract.
+- Reentrancy guard, custom errors, events for every state change.
+- Foundry tests: in-policy payment, each rule producing a Held request, freeze blocks everything, approve-with-remember lets the next identical payment go through alone, access control, reentrancy.
+- Foundry script `Corpus.s.sol`: replays 50 labelled payment attempts (in-policy, over per-payment cap, over daily cap, unknown payee, burst over rate limit, frozen vault) and prints expected vs actual outcome for each.
+
+Frontend (React), three views:
+- Owner: deposit, edit policy, freeze button, the Held queue with Approve / Approve + remember / Deny, and the autonomy rate (paid alone vs held) as a big number.
+- Live ledger: every Paid / Held / Blocked event with reason, rule broken and explorer link. Readable without connecting a wallet.
+- Agent simulator: a panel that acts as the agent; preset buttons fire realistic requests ("pay API vendor $0.02", "pay unknown address $40", "burst 10 payments") so the demo needs no setup.
+
+Deploy to Arc testnet, wire it into the app, run the corpus once and the three simulator presets in the preview.

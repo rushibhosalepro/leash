@@ -1,0 +1,327 @@
+{
+  "vaultMain": "0xb1dc5Ebf7993428da0E53764baD49bE2258402B4",
+  "vaultDaily": "0x417B03c47Bd7a86f3fB562f95db7E6eC5433768F",
+  "ranAt": "2026-10-27T11:16:50.907Z",
+  "totals": {
+    "paid": 6,
+    "held": 34,
+    "blocked": 10,
+    "total": 50,
+    "wrong": 12
+  },
+  "onchain": {
+    "vaultMain": {
+      "paidAlone": "9",
+      "heldCount": "36",
+      "blockedCount": "10",
+      "frozen": false
+    },
+    "vaultDaily": {
+      "paidAlone": "3",
+      "heldCount": "14",
+      "blockedCount": "0"
+    }
+  },
+  "cases": [
+    {
+      "label": "1.1 in-policy via Memo",
+      "expected": "Paid",
+      "actual": "Paid",
+      "txHash": "0x2dbcef00842dc6c4467c61a539018294388c918237ec67d166f2fcddaf6a64cb"
+    },
+    {
+      "label": "1.2 in-policy via Memo",
+      "expected": "Paid",
+      "actual": "Paid",
+      "txHash": "0xfe6cd9498fee6d4b597cd692e3248af26a32db71650faf8f73d8e128e58198f8"
+    },
+    {
+      "label": "1.3 in-policy via Memo",
+      "expected": "Paid",
+      "actual": "Paid",
+      "txHash": "0x280f7176c25712ea24a0671f0f37211bb086461589d5a1c12208eafc614cae4f"
+    },
+    {
+      "label": "1.4 in-policy via Memo",
+      "expected": "Paid",
+      "actual": "Held",
+      "txHash": "0xd1b0121b1df57d899b86fa8404aa7a49b92db4e5d0e68eec049ad9549a475045"
+    },
+    {
+      "label": "1.5 in-policy via Memo",
+      "expected": "Paid",
+      "actual": "Held",
+      "txHash": "0xdfe22e6dee22a39c22a448d65b28df14edb86aa3e2e2d3076c0afbd7a6daca2b"
+    },
+    {
+      "label": "1.6 in-policy direct",
+      "expected": "Paid",
+      "actual": "Held",
+      "txHash": "0x5848a33d22fdd95e6b773ed320632577eefb5b97facadfd3a0f5c6f48bcc30c1"
+    },
+    {
+      "label": "1.7 in-policy direct",
+      "expected": "Paid",
+      "actual": "Held",
+      "txHash": "0x28febc585a5836e9542ead9b0916c01e52b8832a59e050fea20bb1f8dd0ca7cb"
+    },
+    {
+      "label": "1.8 in-policy direct",
+      "expected": "Paid",
+      "actual": "Held",
+      "txHash": "0x1af1acbe7db0251476ecb18b22ac71bb4e12c9c9ad0e4360673b6ff8e09f5348"
+    },
+    {
+      "label": "1.9 in-policy direct",
+      "expected": "Paid",
+      "actual": "Held",
+      "txHash": "0x7e23f1fa04130543c25dc05501a744670b16eb04e8457ba9ac540adb3787bbdd"
+    },
+    {
+      "label": "1.10 in-policy direct",
+      "expected": "Paid",
+      "actual": "Held",
+      "txHash": "0x8bfce623ee4e98992ebcc19bf3a43a674dea75b0845671e02d31a42b5f70a6c6"
+    },
+    {
+      "label": "2.1 over per-payment cap",
+      "expected": "Held",
+      "actual": "Held",
+      "txHash": "0x982396a78943cd132c96ecc22ee64ebaff29d9c867e8bf6095a75f668355fbe5"
+    },
+    {
+      "label": "2.2 over per-payment cap",
+      "expected": "Held",
+      "actual": "Held",
+      "txHash": "0x79357ed231485f53777308fae7d90673b0775153fa7aba04f86d6b5b4ce0b289"
+    },
+    {
+      "label": "2.3 over per-payment cap",
+      "expected": "Held",
+      "actual": "Held",
+      "txHash": "0x663086642b43a11c13b935756b759e6435c35646e3c24dab0ff8deeef6fc67f5"
+    },
+    {
+      "label": "2.4 over per-payment cap",
+      "expected": "Held",
+      "actual": "Held",
+      "txHash": "0x823c29f8770bd9b487c6d831f7bb71fad5ad97bdbe6d6a9b3afb8f5912f5cfea"
+    },
+    {
+      "label": "2.5 over per-payment cap",
+      "expected": "Held",
+      "actual": "Held",
+      "txHash": "0x413b90bed057f94c46235ba8ecc565279bc0ac410cfc65ddc47d123ca8a37db5"
+    },
+    {
+      "label": "3.1 filling daily cap",
+      "expected": "Paid",
+      "actual": "Held",
+      "txHash": "0xa990724c5f27477c52dd96909052288871cf7ed5913db4ae00b75d4f39a5af8d"
+    },
+    {
+      "label": "3.2 filling daily cap",
+      "expected": "Paid",
+      "actual": "Held",
+      "txHash": "0x9ea17c1f5dfcf0150972b451069c30b0d42f03b9bc85c969b8e59e447e51df3e"
+    },
+    {
+      "label": "3.3 filling daily cap",
+      "expected": "Paid",
+      "actual": "Held",
+      "txHash": "0xdc683cdca49026c2e4538cf4bacf0313020e48a2af57bf6fb2e904c1469a1509"
+    },
+    {
+      "label": "3.4 filling daily cap",
+      "expected": "Paid",
+      "actual": "Held",
+      "txHash": "0x741c08b20cd659de6372e26b2a98a1e2a4f9ec08b49d9f6b859e46f0d3009817"
+    },
+    {
+      "label": "3.5 filling daily cap",
+      "expected": "Paid",
+      "actual": "Held",
+      "txHash": "0xe8090743097853ac4ba8dc1331fd74f23c300910769ccb582bff7be0af8c152b"
+    },
+    {
+      "label": "3.6 over daily cap",
+      "expected": "Held",
+      "actual": "Held",
+      "txHash": "0xbb140716604b27404f0ed346f40074c6b1907bec02831e0089d71bb776d3e875"
+    },
+    {
+      "label": "3.7 over daily cap",
+      "expected": "Held",
+      "actual": "Held",
+      "txHash": "0x89679c73a69fa1657740198b7c7dff2833693455dc331982b42bb936fced7c5e"
+    },
+    {
+      "label": "3.8 over daily cap",
+      "expected": "Held",
+      "actual": "Held",
+      "txHash": "0x5e9a6f0b9ce68de96d782e34a9bef1abb5bb9ffa1446183082238e03ab81d53e"
+    },
+    {
+      "label": "3.9 over daily cap",
+      "expected": "Held",
+      "actual": "Held",
+      "txHash": "0x5a67308425bced17eb2ec593a42d002b8abf14fe968ed0c5085eefb6f4c41105"
+    },
+    {
+      "label": "3.10 over daily cap",
+      "expected": "Held",
+      "actual": "Held",
+      "txHash": "0x6aad288f964c936bc36d8c6da384398a05dce005185dc6686b792b6e9446ca26"
+    },
+    {
+      "label": "4.1 unknown payee",
+      "expected": "Held",
+      "actual": "Held",
+      "txHash": "0xf577b373263a8ee0c056a19c01ffc07d10f707e323f49e8a620c7ac6712d0f41"
+    },
+    {
+      "label": "4.2 unknown payee",
+      "expected": "Held",
+      "actual": "Held",
+      "txHash": "0x905eadd9976b0428ea630a9a4ac6b7b22afdfdee7720b0a098f94bb8ea9f2c11"
+    },
+    {
+      "label": "4.3 unknown payee",
+      "expected": "Held",
+      "actual": "Held",
+      "txHash": "0x5202bbcd72c358aa07ec52fcaa624f59105e609d722987de13d5ab793713ccbe"
+    },
+    {
+      "label": "4.4 unknown payee",
+      "expected": "Held",
+      "actual": "Held",
+      "txHash": "0xc266f32ac26faa8477c2f53efeca83a388fda49a0bbea5efd4820b438c4ff28d"
+    },
+    {
+      "label": "4.5 unknown payee",
+      "expected": "Held",
+      "actual": "Held",
+      "txHash": "0xdd9e7219700cc90b3ad0b06ec1d65af8c71b574b1e7b28dcb07faf2c5fd221ef"
+    },
+    {
+      "label": "5.1 burst within rate limit",
+      "expected": "Paid",
+      "actual": "Paid",
+      "txHash": "0x872db6ce0d1e3ef39e6e2e89ddab4fd3389f8b82c65a4053fd1718ec81c713fe"
+    },
+    {
+      "label": "5.2 burst within rate limit",
+      "expected": "Paid",
+      "actual": "Paid",
+      "txHash": "0x6f3254530fe83dca29d7304b1592c43e89c71e9bb93ed8b553a7b4b9c07f2176"
+    },
+    {
+      "label": "5.3 burst within rate limit",
+      "expected": "Paid",
+      "actual": "Paid",
+      "txHash": "0x899b1cdf142ecc34b77d0dc8d6c581a5963db1f8bd9013e962838f33292d5435"
+    },
+    {
+      "label": "5.4 burst over rate limit",
+      "expected": "Held",
+      "actual": "Held",
+      "txHash": "0xca76c387805adf12b603527d906aa20bab826bf80e1620514c3b428dc03b5bdd"
+    },
+    {
+      "label": "5.5 burst over rate limit",
+      "expected": "Held",
+      "actual": "Held",
+      "txHash": "0xe69d709158770d4841d24428ab1c792788da0dfe938c3854387aa6e30a6401a9"
+    },
+    {
+      "label": "5.6 burst over rate limit",
+      "expected": "Held",
+      "actual": "Held",
+      "txHash": "0x345b8fe970a85c922b13c58febeef9dacb4404329997ccaf0eba3ebf2a285c34"
+    },
+    {
+      "label": "5.7 burst over rate limit",
+      "expected": "Held",
+      "actual": "Held",
+      "txHash": "0x2c84c33cffdcfee3f7b3ec73fd2d3955712d4e4aa0610f5e3dbbfd3b17a1a616"
+    },
+    {
+      "label": "5.8 burst over rate limit",
+      "expected": "Held",
+      "actual": "Held",
+      "txHash": "0xb3be81b737010512e1bcbb12b18da44b062f111c3ed2001750387937839f84e4"
+    },
+    {
+      "label": "5.9 burst over rate limit",
+      "expected": "Held",
+      "actual": "Held",
+      "txHash": "0x7a11a69bf5558c038835a32fc4e38efcc1f77c0b36d53e8891654adc7c919e70"
+    },
+    {
+      "label": "5.10 burst over rate limit",
+      "expected": "Held",
+      "actual": "Held",
+      "txHash": "0x00f4b0f4a5871147d101c4741a8257fef7a02dfe2efb04063a7bcbe7dc3ea79d"
+    },
+    {
+      "label": "6.1 frozen vault blocks pay",
+      "expected": "Blocked",
+      "actual": "Blocked",
+      "txHash": "0xfcd6f3c6eb1f552554eaa2d84f06ea88d3f41fced63d396d37181e49b26c6072"
+    },
+    {
+      "label": "6.2 frozen vault blocks pay",
+      "expected": "Blocked",
+      "actual": "Blocked",
+      "txHash": "0x1f90c072a849b02e3eb4004e1e94fcf2397df5c537d6a45ce0dec5f814ba3e14"
+    },
+    {
+      "label": "6.3 frozen vault blocks pay",
+      "expected": "Blocked",
+      "actual": "Blocked",
+      "txHash": "0x223bd1ea5bef14bcf2b68ef1873a23473e8dd0415b96ded873eee305d42e87f2"
+    },
+    {
+      "label": "6.4 frozen vault blocks pay",
+      "expected": "Blocked",
+      "actual": "Blocked",
+      "txHash": "0x26c1f29865df6bba57da6cdb7e1e94385b4d9eb649f2551b6f420f03846deda3"
+    },
+    {
+      "label": "6.5 frozen vault blocks pay",
+      "expected": "Blocked",
+      "actual": "Blocked",
+      "txHash": "0xbe6eff144aba8fc46aef0519427f9c6ae0c0e22d2219a0d82232d2e79a5d7ad3"
+    },
+    {
+      "label": "7.1 denylist hard block",
+      "expected": "Blocked",
+      "actual": "Blocked",
+      "txHash": "0x2ca29fa44790557ce8a62935e486b47df97d6de9282aa280325a713784fb7256"
+    },
+    {
+      "label": "7.2 denylist hard block",
+      "expected": "Blocked",
+      "actual": "Blocked",
+      "txHash": "0x8d7ce99e57bbca2dae97cbaf79f8871cd925e0d98f8d8441190de21444a29241"
+    },
+    {
+      "label": "7.3 denylist hard block",
+      "expected": "Blocked",
+      "actual": "Blocked",
+      "txHash": "0xb9ff823b8caf696f9fc0e41c34246f0e51680799dc76d755b235f95f4aea8a92"
+    },
+    {
+      "label": "7.4 denylist hard block",
+      "expected": "Blocked",
+      "actual": "Blocked",
+      "txHash": "0xa1f4da5ab49c67320de33045c8db94e7f4dd084725f0b716493190e6b48beac5"
+    },
+    {
+      "label": "7.5 denylist hard block",
+      "expected": "Blocked",
+      "actual": "Blocked",
+      "txHash": "0x3ebfb012ff09e9c4e6a659572dd1a26d7173b72a9b13980a923a891024d70d06"
+    }
+  ]
+}

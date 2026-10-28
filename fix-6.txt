@@ -1,0 +1,18 @@
+Contract change for an MCP agent integration. Keep all existing behaviour.
+
+1) Add a read-only preview so an AI agent can ask "would this payment go through?" before paying:
+   function check(address payee, uint256 amount) external view returns (uint8 outcome, string memory rule)
+   outcome: 0 = Paid, 1 = Held, 2 = Blocked. rule: the same ruleBroken string pay() would use ("" when Paid; plus "insufficient_balance" if it would pass the rules but the vault cannot cover it).
+   IMPORTANT: pay() and check() must share ONE internal view function that evaluates the rules (e.g. _evaluate(payee, amount) returns (outcome, rule)), so they can never disagree. The daily-cap check in the view must treat dailySpent as 0 if a new day has started (without writing state). pay() then acts on the result (pays / creates Held / records Blocked) exactly as today.
+
+2) Add `function remainingToday() external view returns (uint256)` = dailyCap minus today's spend (0 if over), using the same day-roll logic.
+
+3) Tests: for every one of the 50 corpus scenarios, assert check() predicts exactly the outcome pay() then produces (a property test that check-then-pay always agree, including across a day boundary with vm.warp, and with the rate limit). Keep the no-etch rule: nothing at 0x66.
+
+4) Redeploy to Arc Testnet as the new demo vault with:
+   owner_ = 0x586664F50674c2f93767D249902e872eb6738ea0
+   agent  = 0x49f600611E93e33d06a93CcC4aDbB202b0CCACbF   (wallet held by a local MCP server)
+   perPaymentCap = 1 USDC, dailyCap = 5 USDC, maxPerHour = 10. No funds.
+   Point src/leash-contract.ts at it and add `check` / `remainingToday` to nothing else in the UI yet.
+
+5) Update AGENTS.md (new address, the check() design note) and keep the older vault addresses listed as history.

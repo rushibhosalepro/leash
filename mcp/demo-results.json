@@ -1,0 +1,146 @@
+[
+  {
+    "phase": "a",
+    "step": "Agent reads its rules",
+    "expected": "daily limit and what is left today",
+    "at": "2026-10-28T02:54:50.532Z",
+    "tool": "leash_get_rules",
+    "args": {},
+    "result": {
+      "network": "Arc Testnet",
+      "vault": "0x923aa72a2ff76f91358ffc5a87b5afb202beeca1",
+      "owner": "0x586664F50674c2f93767D249902e872eb6738ea0",
+      "agent": "0x49f600611E93e33d06a93CcC4aDbB202b0CCACbF",
+      "this_server_is_the_agent": true,
+      "you_can_change_these_rules": false,
+      "frozen": false,
+      "per_payment_limit_usdc": "1",
+      "daily_limit_usdc": "1",
+      "left_today_usdc": "1",
+      "max_payments_per_hour": 30,
+      "payments_in_last_hour": 0,
+      "trusted_payees": [],
+      "trusted_payees_rule": "No trusted list is set, so any payee is allowed within the limits.",
+      "blocked_payees": [],
+      "waiting_for_owner": 0,
+      "vault_balance_usdc": "3",
+      "agent_gas_balance_usdc": "16.931013625",
+      "how_rules_apply": [
+        "Two rules: a daily limit for everything you spend (daily_limit_usdc, left_today_usdc), and a per-payment limit for each saved payee (see leash_list_payees).",
+        "Paid immediately: the payee is saved, the amount is within its per-payment limit, and within what is left today.",
+        "Held for the owner: the payee is not saved, the amount is over its per-payment limit, or over what is left today.",
+        "Blocked (nothing moves): the payee is blocked or the vault is frozen."
+      ]
+    }
+  },
+  {
+    "phase": "a",
+    "step": "Agent asks before paying $0.05",
+    "expected": "would_be: paid",
+    "at": "2026-10-28T02:54:50.787Z",
+    "tool": "leash_check_payment",
+    "args": {
+      "payee": "0x7f3e00000000000000000000000000000000c19a",
+      "amount_usdc": "0.05"
+    },
+    "result": {
+      "would_be": "paid",
+      "rule": null,
+      "why": null
+    }
+  },
+  {
+    "phase": "a",
+    "step": "Within the limit: agent pays $0.05",
+    "expected": "Paid, with its reason in an Arc Memo event",
+    "at": "2026-10-28T02:54:52.740Z",
+    "tool": "leash_pay",
+    "args": {
+      "payee": "0x7f3e00000000000000000000000000000000c19a",
+      "amount_usdc": "0.05",
+      "reason": "Demo: paying for one weather API call"
+    },
+    "result": {
+      "outcome": "paid",
+      "payment_id": "1",
+      "rule": null,
+      "why": null,
+      "amount_usdc": "0.05",
+      "payee": "0x7F3E00000000000000000000000000000000c19a",
+      "payee_name": null,
+      "tx": "0x3373c4bdc72b439a51eeeae8ba6b7b173392df6f3ccacbf1f74d54ad5b382403",
+      "explorer": "https://testnet.arcscan.app/tx/0x3373c4bdc72b439a51eeeae8ba6b7b173392df6f3ccacbf1f74d54ad5b382403",
+      "log_id": "a2",
+      "note": null
+    }
+  },
+  {
+    "phase": "a",
+    "step": "Excessive: agent tries $2.00 against a $1.00 daily limit",
+    "expected": "Held for the owner, no USDC moves",
+    "at": "2026-10-28T02:54:54.023Z",
+    "tool": "leash_pay",
+    "args": {
+      "payee": "0x7f3e00000000000000000000000000000000c19a",
+      "amount_usdc": "2",
+      "reason": "Demo: trying to spend more than the daily limit"
+    },
+    "result": {
+      "outcome": "held",
+      "payment_id": "2",
+      "rule": "per_payment_cap",
+      "why": "more than your whole daily limit",
+      "amount_usdc": "2",
+      "payee": "0x7F3E00000000000000000000000000000000c19a",
+      "payee_name": null,
+      "tx": "0x56e3bc4d62d436ae81d63394ab91835328dbaaf592be57a9b75852b5349858e8",
+      "explorer": "https://testnet.arcscan.app/tx/0x56e3bc4d62d436ae81d63394ab91835328dbaaf592be57a9b75852b5349858e8",
+      "log_id": "a3",
+      "note": null
+    }
+  },
+  {
+    "phase": "a",
+    "step": "Unauthorized: agent key calls setPolicy to raise its own limit to $1,000",
+    "expected": "Transaction fails with NotOwner; limits unchanged",
+    "at": "2026-10-28T02:54:56.307Z",
+    "status": "reverted",
+    "revert": "Execution reverted for an unknown reason.",
+    "tx": "0x8fd901bd3d902b885890f1843a29bd3a83c08d116b44ddd642e1c63d2124a2f0",
+    "explorer": "https://testnet.arcscan.app/tx/0x8fd901bd3d902b885890f1843a29bd3a83c08d116b44ddd642e1c63d2124a2f0"
+  },
+  {
+    "phase": "a",
+    "step": "Agent re-reads its rules",
+    "expected": "still the owner’s $1.00 daily limit",
+    "at": "2026-10-28T02:54:57.420Z",
+    "tool": "leash_get_rules",
+    "args": {},
+    "result": {
+      "network": "Arc Testnet",
+      "vault": "0x923aa72a2ff76f91358ffc5a87b5afb202beeca1",
+      "owner": "0x586664F50674c2f93767D249902e872eb6738ea0",
+      "agent": "0x49f600611E93e33d06a93CcC4aDbB202b0CCACbF",
+      "this_server_is_the_agent": true,
+      "you_can_change_these_rules": false,
+      "frozen": false,
+      "per_payment_limit_usdc": "1",
+      "daily_limit_usdc": "1",
+      "left_today_usdc": "0.95",
+      "max_payments_per_hour": 30,
+      "payments_in_last_hour": 1,
+      "trusted_payees": [],
+      "trusted_payees_rule": "No trusted list is set, so any payee is allowed within the limits.",
+      "blocked_payees": [],
+      "waiting_for_owner": 1,
+      "vault_balance_usdc": "2.95",
+      "agent_gas_balance_usdc": "16.917504225",
+      "how_rules_apply": [
+        "Two rules: a daily limit for everything you spend (daily_limit_usdc, left_today_usdc), and a per-payment limit for each saved payee (see leash_list_payees).",
+        "Paid immediately: the payee is saved, the amount is within its per-payment limit, and within what is left today.",
+        "Held for the owner: the payee is not saved, the amount is over its per-payment limit, or over what is left today.",
+        "Blocked (nothing moves): the payee is blocked or the vault is frozen."
+      ]
+    }
+  }
+]

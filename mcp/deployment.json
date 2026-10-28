@@ -1,0 +1,10 @@
+{
+  "vault": "0x923aa72a2ff76f91358ffc5a87b5afb202beeca1",
+  "block": "69432747",
+  "tx": "0x59fb9bf3eb828054386756cf06e8f2c7bb6119569cb74494cf1d588758fd3436",
+  "owner": "0x586664F50674c2f93767D249902e872eb6738ea0",
+  "agent": "0x49f600611E93e33d06a93CcC4aDbB202b0CCACbF",
+  "daily_limit_usdc": "1",
+  "initial_deposit_usdc": "3",
+  "explorer": "https://testnet.arcscan.app/address/0x923aa72a2ff76f91358ffc5a87b5afb202beeca1"
+}

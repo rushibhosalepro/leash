@@ -1,0 +1,25 @@
+Add per-payee spending limits to Leash.sol, enforced on-chain. Keep everything else working exactly as now.
+
+Contract:
+- struct PayeeLimit { uint256 perPaymentCap; uint256 dailyCap; uint256 spent; uint256 dayStart; bool set; }
+- mapping(address => PayeeLimit) payee limits.
+- function setPayeeLimit(address payee, uint256 perPaymentCap, uint256 dailyCap) external onlyOwner
+  0 means "no extra limit" for that field. Emits PayeeLimitSet(address indexed payee, uint256 perPaymentCap, uint256 dailyCap).
+- function clearPayeeLimit(address payee) external onlyOwner   (emits PayeeLimitSet(payee, 0, 0))
+- function payeeLimit(address payee) external view returns (uint256 perPaymentCap, uint256 dailyCap, uint256 spentToday, uint256 remainingToday)
+  spentToday treats a new day as 0 without writing state; remainingToday = dailyCap - spentToday (0 if over; type(uint256).max if dailyCap is 0).
+- In the shared _evaluate(payee, amount) (used by both check() and pay()), AFTER the existing hard (Blocked) checks and alongside the existing soft checks:
+    amount > payee perPaymentCap (when set and non-zero)  -> Held, rule "payee_per_payment_cap"
+    payee spentToday + amount > payee dailyCap (when set and non-zero) -> Held, rule "payee_daily_cap"
+  The vault-wide limits still apply too; a payment must pass both.
+- On the Paid path in pay(), roll the payee's day if needed and add the amount to its spent. Owner approvals (approve()) do NOT count toward the payee's daily spend, matching how they don't count toward the vault-wide dailySpent.
+
+Tests (new file contracts/test/Leash.PayeeLimit.t.sol):
+- per-payee cap holds, per-payee daily cap holds after cumulative payments, day rollover resets payee spend (vm.warp), payee limit and vault limit both enforced, clearPayeeLimit removes it, only owner can set/clear, check() and pay() agree for all of these, approve() of a held payee-limit payment pays and does not consume the payee daily budget.
+Keep all existing tests passing. No vm.etch anywhere.
+
+Deploy a NEW demo vault on Arc Testnet with the same args as the current one:
+  owner_ = 0x586664F50674c2f93767D249902e872eb6738ea0
+  agent  = 0x49f600611E93e33d06a93CcC4aDbB202b0CCACbF
+  perPaymentCap = 1 USDC, dailyCap = 5 USDC, maxPerHour = 10, no funds.
+Do NOT change any frontend files in src/ (I maintain the UI locally). Update AGENTS.md with the new address, the per-payee limit design, and keep older addresses as history. Report the deploy tx hash and block number.

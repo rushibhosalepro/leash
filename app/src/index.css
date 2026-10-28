@@ -1,0 +1,69 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* MetaMask-style dark: black canvas, grey cards, white text, white pill buttons, blue only for links. */
+  --bg: #000000;
+  --bg-gradient: #000000;
+  --surface: #1c1d1f;
+  --surface-strong: #27282b;
+  --surface-muted: #303135;
+  --ink: #ffffff;
+  --ink-2: #e7e8ea;
+  --muted: #b4b7be;
+  --subtle: #8a8f99;
+  --border: #2c2d31;
+  --border-strong: #3d3f44;
+  --accent: #ffffff;
+  --accent-hover: #e7e8ea;
+  --on-accent: #000000;
+  --link: #8b99ff;
+  /* One colour per outcome, used for nothing else. */
+  --paid: #3fbf6e;
+  --paid-bg: rgba(63, 191, 110, 0.12);
+  --paid-border: rgba(63, 191, 110, 0.3);
+  --held: #f0b034;
+  --held-bg: rgba(240, 176, 52, 0.12);
+  --held-border: rgba(240, 176, 52, 0.3);
+  --blocked: #ff5c6c;
+  --blocked-bg: rgba(255, 92, 108, 0.12);
+  --blocked-border: rgba(255, 92, 108, 0.3);
+  --success: var(--paid);
+  --danger: var(--blocked);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  background: var(--bg-gradient);
+  color: var(--ink);
+  min-height: 100dvh;
+}
+
+.display {
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.mono {
+  font-family: 'JetBrains Mono', Menlo, monospace;
+}
+
+/* Sonner toast dark theme */
+[data-sonner-toaster] {
+  --normal-bg: #1c1d1f;
+  --normal-border: #3d3f44;
+  --normal-text: #ffffff;
+}
+
+/* MetaMask-style pill buttons and fields. */
+header button, main button, aside button { border-radius: 9999px !important; }
+main input:not([type=checkbox]), aside input { border-radius: 12px !important; }
+a:not(.mono) { text-underline-offset: 2px; }

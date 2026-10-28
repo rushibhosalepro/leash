@@ -1,0 +1,8 @@
+The corpus wallet 0x0513FCCb398c181BB73F71Ba45E3336f5A32Ef4d now has 5.0 USDC on Arc Testnet (sent from my MetaMask). Run scripts/run-corpus-onchain.ts now, in the sandbox, with the wallet key from the sandbox environment. Rules:
+
+- NEVER print, echo, log or include the private key in any reply, command, file or commit. Refer to it only as $LEASH_PRIVATE_KEY from the environment.
+- Step 1: withdrawAll() on the stale vaults 0x5a70b756304602E3569FDB5Fa50333b55fE56C17 and 0x820475Eed108Ffe8005A28f75DBdef56096Cb8E6.
+- Step 2: resume the corpus on vaultMain 0xb1dc5Ebf7993428da0E53764baD49bE2258402B4 and vaultDaily 0x417B03c47Bd7a86f3fB562f95db7E6eC5433768F, recording already-sent cases with their existing tx hashes, and broadcast the rest. Keep at least 0.1 USDC in the wallet at all times.
+- Step 3: write corpus-results.json (label, expected, actual, tx hash per case; totals Paid / Held / Blocked / WRONG; vault addresses; on-chain paidAlone / heldCount / blockedCount for both vaults) and print the totals.
+- Step 4: when done, send everything left in the corpus wallet above 0.1 USDC back to 0x586664F50674c2f93767D249902e872eb6738ea0, and print the tx hash.
+- Update README.md corpus section with the final totals.

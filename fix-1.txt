@@ -1,0 +1,17 @@
+Fix three problems in Leash before we go further. Keep everything else as is.
+
+1) The memo integration is wrong and breaks pay() on the real chain. There is NO contract at 0x0000000000000000000000000000000000000066 on Arc (eth_getCode returns 0x), so `IMemo(0x66).sendMemo(...)` reverts before the try (extcodesize check) and every in-policy payment reverts. The tests only pass because Leash.Base.t.sol etches a MemoStub at 0x66.
+   - Remove IMemo, MEMO_PRECOMPILE and _trySendMemo from Leash.sol.
+   - Remove MemoStub and the vm.etch from the tests.
+   - Instead, attach memos the Arc way, from the agent side: Arc's predeployed Memo contract is 0x5294E9927c3306DcBaDb03fe70b92e01cCede505 (same on testnet and mainnet), entry point `memo(address target, bytes data, bytes32 memoId, bytes memoData)`. It must be called directly by an EOA and preserves the EOA as msg.sender for the target call via CallFrom. In the Agent Simulator, send every payment as Memo.memo(target = Leash address, data = abi-encoded pay(payee, amount, reason), memoId = keccak256 of a request id, memoData = utf8 reason). Keep a toggle to call pay() directly as a fallback.
+   - In the Live Ledger, also read Memo events (filtered by target = Leash) and show the memo text next to the matching payment.
+
+2) Ownership. `owner` is currently msg.sender, which is the Arc Studio deployer wallet, so I cannot use the Owner view. Make owner a constructor argument and add `transferOwnership(address newOwner)` (onlyOwner, emits OwnershipTransferred, rejects address(0)).
+
+3) Blocked attempts must leave evidence. Today hard violations (frozen vault, denylisted payee, zero payee, zero amount) revert, so `blockedCount` is always 0 and the corpus cannot prove "nothing outside the rules got through". Change hard violations to NOT revert: move no money, create no held request, increment `blockedCount`, emit `Blocked(id, payee, amount, reason, ruleBroken)` as an EVENT, and return. Keep `error`s only for access control and bookkeeping (NotOwner, NotAgent, RequestNotFound, AlreadySettled, InsufficientBalance). Make `autonomyRate()` return (paidAlone, held, blocked).
+
+Then:
+- Update tests for all three changes (including a test that pay() works with no code at 0x66, i.e. no etch anywhere) and run them.
+- Update Corpus.s.sol so every one of the 50 cases records its outcome (Paid / Held / Blocked) and prints a final table plus totals, with a WRONG count of cases whose outcome differs from the label.
+- Redeploy to Arc testnet with owner = the deployer for now, run the corpus against the new deployment, and show me the totals.
+- Update AGENTS.md and README.md.
