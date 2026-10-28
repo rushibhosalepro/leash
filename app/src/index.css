@@ -64,6 +64,6 @@ body {
 }
 
 /* MetaMask-style pill buttons and fields. */
-header button, main button, aside button { border-radius: 9999px !important; }
+header button:not(.tile), main button:not(.tile), aside button:not(.tile) { border-radius: 9999px !important; }
 main input:not([type=checkbox]), aside input { border-radius: 12px !important; }
 a:not(.mono) { text-underline-offset: 2px; }

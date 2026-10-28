@@ -1,6 +1,7 @@
 // Leash MCP server: gives any MCP agent a USDC spending account on Arc, inside the owner's rules.
 // Local only for now: listens on 127.0.0.1 and answers only on the secret path /mcp/<MCP_TOKEN>.
-import { timingSafeEqual } from 'node:crypto'
+import { randomBytes, timingSafeEqual } from 'node:crypto'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js'
 import { z } from 'zod'
@@ -9,8 +10,17 @@ import { recentAttempts } from './db'
 import { listPayees, upsertPayee, removePayee, resolvePayee } from './payees'
 
 const PORT = Number(process.env.MCP_PORT ?? 8787)
-const TOKEN = process.env.MCP_TOKEN ?? ''
+let TOKEN = process.env.MCP_TOKEN ?? ''
 if (TOKEN.length < 24) throw new Error('MCP_TOKEN is missing from mcp/.env; run `bun run init-agent`')
+// The owner can turn the link off from the web app; while off, the MCP endpoint answers 404.
+let LINK_ON = process.env.LINK_ENABLED !== 'false'
+
+/** Writes one KEY=value line in mcp/.env, so link changes survive a restart. Never logs the value. */
+function saveEnv(key: string, value: string) {
+  const path = new URL('../.env', import.meta.url)
+  const lines = readFileSync(path, 'utf8').split('\n').filter(l => l && !l.startsWith(`${key}=`))
+  writeFileSync(path, [...lines, `${key}=${value}`].join('\n') + '\n')
+}
 
 const payeeRef = z.string().min(1).max(60).describe('A saved payee name (e.g. "Weather API") or a 0x address')
 const usdc = z.string().regex(/^\d+(\.\d{1,6})?$/, 'a USDC amount like "0.02"')
@@ -100,7 +110,8 @@ function tokenMatches(candidate: string) {
 
 // The web app reads the link from here to show it in its header. Only the local app origins may read it.
 const APP_ORIGINS = (process.env.APP_ORIGINS ?? 'http://localhost:5173,http://localhost:5174').split(',')
-const LINK = `http://127.0.0.1:${PORT}/mcp/${TOKEN}`
+const link = () => `http://127.0.0.1:${PORT}/mcp/${TOKEN}`
+const linkInfo = () => ({ link: LINK_ON ? link() : null, on: LINK_ON, agent: AGENT, vault: VAULT })
 
 // Endpoints for the web app (/link, /payees). Only the local app origins may call them; the agent never does.
 async function appApi(req: Request, url: URL): Promise<Response> {
@@ -115,7 +126,20 @@ async function appApi(req: Request, url: URL): Promise<Response> {
   }
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers })
 
-  if (url.pathname === '/link') return Response.json({ link: LINK, agent: AGENT, vault: VAULT }, { headers })
+  if (url.pathname === '/link') {
+    if (req.method === 'POST') {
+      const { action } = (await req.json()) as { action?: 'rotate' | 'on' | 'off' }
+      if (action === 'rotate') {
+        // A new secret: the old link stops working immediately.
+        TOKEN = randomBytes(24).toString('base64url')
+        saveEnv('MCP_TOKEN', TOKEN)
+      } else if (action === 'on' || action === 'off') {
+        LINK_ON = action === 'on'
+        saveEnv('LINK_ENABLED', String(LINK_ON))
+      }
+    }
+    return Response.json(linkInfo(), { headers })
+  }
   if (url.pathname === '/agent-log') return Response.json(recentAttempts(VAULT), { headers })
 
   try {
@@ -142,7 +166,7 @@ Bun.serve({
     if (['/link', '/payees', '/agent-log'].includes(url.pathname)) return appApi(req, url)
 
     const [, prefix, token] = url.pathname.split('/')
-    if (prefix !== 'mcp' || !token || !tokenMatches(token)) return new Response('Not found', { status: 404 })
+    if (!LINK_ON || prefix !== 'mcp' || !token || !tokenMatches(token)) return new Response('Not found', { status: 404 })
 
     // Stateless: a fresh server and transport per request, so nothing is shared between clients.
     const server = buildServer()

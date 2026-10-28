@@ -2,13 +2,13 @@ import { useState } from 'react'
 import { useAccount } from 'wagmi'
 import { useVault } from './useVault'
 import { Header } from './components/Header'
-import { Activity } from './components/Activity'
-import { Rules } from './components/Rules'
+import { Wallet } from './components/Wallet'
+import { Settings } from './components/Settings'
 import { ConnectAgent } from './components/ConnectAgent'
 import { useNetwork, addressUrl } from './network'
 import { shortAddr } from './leash-contract'
 
-type Tab = 'activity' | 'rules'
+type View = 'wallet' | 'settings'
 
 /**
  * Everything on the page is read from a public contract, so it shows with or without a wallet.
@@ -43,11 +43,11 @@ function VaultLabel() {
 
 export default function App() {
   const { network } = useNetwork()
-  const [tab, setTab] = useState<Tab>('activity')
+  const [view, setView] = useState<View>('wallet')
 
   return (
     <div className="min-h-dvh" style={{ background: 'var(--bg-gradient)' }}>
-      <Header />
+      <Header view={view} onView={setView} />
 
       <main className="max-w-6xl mx-auto px-4 py-6">
         {!network.vault ? (
@@ -57,20 +57,14 @@ export default function App() {
         ) : (
           <>
           <VaultLabel />
-          <div className="grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_360px] gap-6 items-start">
-            <div className="min-w-0">
-              <nav className="flex gap-1 mb-6 text-sm">
-                {(['activity', 'rules'] as Tab[]).map(t => (
-                  <button key={t} onClick={() => setTab(t)} className="px-3 py-1.5 rounded-lg font-medium capitalize"
-                    style={{ background: tab === t ? 'var(--surface-strong)' : 'transparent', color: tab === t ? 'var(--ink)' : 'var(--subtle)' }}>
-                    {t}
-                  </button>
-                ))}
-              </nav>
-              {tab === 'activity' ? <Activity onOpenRules={() => setTab('rules')} /> : <Rules />}
+          {view === 'settings' ? (
+            <Settings onBack={() => setView('wallet')} />
+          ) : (
+            <div className="grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_360px] gap-6 items-start">
+              <div className="min-w-0"><Wallet onOpenSettings={() => setView('settings')} /></div>
+              <ConnectAgent />
             </div>
-            <ConnectAgent />
-          </div>
+          )}
           </>
         )}
       </main>

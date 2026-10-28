@@ -34,8 +34,10 @@ export function useAgentLog() {
   })
   const forVault = (data ?? []).filter(a => network.vault && a.vault.toLowerCase() === network.vault.toLowerCase())
   const notesByTx = new Map(forVault.filter(a => a.tx_hash && a.notes.length).map(a => [a.tx_hash!.toLowerCase(), a.notes]))
+  const lastUsedAt = forVault.length ? Math.max(...forVault.map(a => Date.parse(a.created_at))) : null
   return {
     notesFor: (tx: string) => notesByTx.get(tx.toLowerCase()) ?? [],
     failed: forVault.filter(a => a.outcome === 'failed'),
+    lastUsedAt,
   }
 }
