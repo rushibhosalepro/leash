@@ -8,6 +8,7 @@ app/out/
 app/cache/
 app/dist/
 .env*
+!.env.example
 build-*.log
 build-*.json
 fix-*.txt.bak
