@@ -1,8 +1,14 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Bot, Copy, Eye, EyeOff } from 'lucide-react'
+import { ConnectKitButton } from 'connectkit'
 import { useAgentLink, maskLink, timeAgo } from '@/useAgentLink'
 import { useAgentLog } from '@/useAgentLog'
+import { useVault } from '@/useVault'
+import { AGENT_URL } from '@/agentServer'
+
+// The default build talks to a server on this machine; the hosted build has the hosted one baked in.
+const LOCAL_SERVER = AGENT_URL.startsWith('http://127.0.0.1')
 
 type Client = 'claude-code' | 'cursor' | 'other'
 
@@ -26,9 +32,11 @@ function setupFor(client: Client, link: string): { step: string; snippet: string
 export function ConnectAgent() {
   const [client, setClient] = useState<Client>('claude-code')
   const [revealed, setRevealed] = useState(false)
-  const { online, info } = useAgentLink()
+  const { online, info, signIn } = useAgentLink()
+  const { isOwner } = useVault()
   const { lastUsedAt } = useAgentLog()
   const link = info?.link ?? null
+  const needsSignIn = online && !!info?.signin && !!info.on
   const shown = (l: string) => (revealed ? l : maskLink(l))
   const setup = link ? setupFor(client, link) : null
 
@@ -37,7 +45,9 @@ export function ConnectAgent() {
     toast.success(`${what} copied`)
   }
 
+  const used = lastUsedAt ? ` · used ${timeAgo(lastUsedAt)}` : ''
   const status = !online ? { dot: 'var(--subtle)', text: 'Agent server offline' }
+    : needsSignIn ? { dot: 'var(--paid)', text: `Agent online${used}` }
     : !link ? { dot: 'var(--held)', text: 'Link turned off in Settings' }
       : { dot: 'var(--paid)', text: lastUsedAt ? `Agent connected · used ${timeAgo(lastUsedAt)}` : 'Ready · not used yet' }
 
@@ -55,9 +65,29 @@ export function ConnectAgent() {
       </div>
 
       {!online ? (
-        <div className="p-3 text-sm" style={{ background: 'var(--surface-strong)', borderRadius: 14, color: 'var(--muted)' }}>
-          Start the agent server in the <span className="mono">mcp</span> folder:
-          <pre className="mono text-xs mt-2 p-2" style={{ background: 'var(--bg)', borderRadius: 10, color: 'var(--ink-2)' }}>bun run start</pre>
+        LOCAL_SERVER ? (
+          <div className="p-3 text-sm" style={{ background: 'var(--surface-strong)', borderRadius: 14, color: 'var(--muted)' }}>
+            Start the agent server in the <span className="mono">mcp</span> folder:
+            <pre className="mono text-xs mt-2 p-2" style={{ background: 'var(--bg)', borderRadius: 10, color: 'var(--ink-2)' }}>bun run start</pre>
+          </div>
+        ) : (
+          <div className="p-3 text-sm" style={{ background: 'var(--surface-strong)', borderRadius: 14, color: 'var(--muted)' }}>
+            The hosted agent server is not answering right now. Payments and rules above are read straight from Arc and stay correct.
+          </div>
+        )
+      ) : needsSignIn ? (
+        <div className="p-3 text-sm space-y-2.5" style={{ background: 'var(--surface-strong)', borderRadius: 14, color: 'var(--ink-2)' }}>
+          <div>The agent is running and can pay inside the rules. Its link is private to the vault owner, because anyone holding it can make the agent pay.</div>
+          {isOwner ? (
+            <button onClick={() => void signIn()} className="w-full py-2.5 text-sm font-bold" style={{ background: 'var(--accent)', color: 'var(--on-accent)' }}>
+              Show agent link · sign with your wallet
+            </button>
+          ) : (
+            <div className="flex items-center justify-between gap-2 text-xs" style={{ color: 'var(--muted)' }}>
+              Owner wallet only.
+              <ConnectKitButton label="Connect owner wallet" />
+            </div>
+          )}
         </div>
       ) : !link ? (
         <div className="p-3 text-sm" style={{ background: 'var(--held-bg)', borderRadius: 14, color: 'var(--ink-2)' }}>
@@ -68,7 +98,7 @@ export function ConnectAgent() {
           <div>
             <div className="text-xs mb-1.5" style={{ color: 'var(--subtle)' }}>Your agent link</div>
             <div className="flex items-start gap-2 px-3 py-2.5 text-xs mono" style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--ink-2)' }}>
-              <span className={`flex-1 min-w-0 ${revealed ? 'break-all' : 'truncate'}`}>{shown(link).replace('http://', '')}</span>
+              <span className={`flex-1 min-w-0 ${revealed ? 'break-all' : 'truncate'}`}>{shown(link).replace(/^https?:\/\//, '')}</span>
               <button onClick={() => setRevealed(v => !v)} title={revealed ? 'Hide link' : 'Show full link'} className="shrink-0" style={{ color: 'var(--subtle)' }}>
                 {revealed ? <EyeOff size={14} /> : <Eye size={14} />}
               </button>

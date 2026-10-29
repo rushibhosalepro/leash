@@ -1,25 +1,60 @@
 // Leash MCP server: gives any MCP agent a USDC spending account on Arc, inside the owner's rules.
-// Local only for now: listens on 127.0.0.1 and answers only on the secret path /mcp/<MCP_TOKEN>.
-import { randomBytes, timingSafeEqual } from 'node:crypto'
-import { readFileSync, writeFileSync } from 'node:fs'
+// Answers agents only on the secret path /mcp/<MCP_TOKEN>. Runs on 127.0.0.1 by default; with MCP_HOST=0.0.0.0
+// (hosted), the link and every setting are shown only to the vault owner after a wallet signature.
+import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js'
+import { verifyMessage, type Hex } from 'viem'
 import { z } from 'zod'
-import { AGENT, VAULT, ON_MAINNET, getRules, checkPayee, checkPayment, pay, noteOnPayment, paymentStatus, pendingForOwner, recentSpending, listPayeesWithStatus } from './leash'
+import { AGENT, VAULT, ON_MAINNET, vaultOwner, getRules, checkPayee, checkPayment, pay, noteOnPayment, paymentStatus, pendingForOwner, recentSpending, listPayeesWithStatus } from './leash'
 import { recentAttempts } from './db'
 import { listPayees, upsertPayee, removePayee, resolvePayee } from './payees'
 
 const PORT = Number(process.env.MCP_PORT ?? 8787)
+const HOST = process.env.MCP_HOST ?? '127.0.0.1'
+// The address agents use to reach this server; on a host, its public https URL.
+const PUBLIC_URL = (process.env.PUBLIC_URL ?? `http://127.0.0.1:${PORT}`).replace(/\/$/, '')
+// Anyone can reach a hosted server, so there the owner must sign in with the vault owner's wallet.
+const OWNER_SIGNIN = HOST !== '127.0.0.1'
 let TOKEN = process.env.MCP_TOKEN ?? ''
 if (TOKEN.length < 24) throw new Error('MCP_TOKEN is missing from mcp/.env; run `bun run init-agent`')
 // The owner can turn the link off from the web app; while off, the MCP endpoint answers 404.
 let LINK_ON = process.env.LINK_ENABLED !== 'false'
 
-/** Writes one KEY=value line in mcp/.env, so link changes survive a restart. Never logs the value. */
+/** Writes one KEY=value line in mcp/.env, so link changes survive a restart. Never logs the value. A host without the file keeps it in memory only. */
 function saveEnv(key: string, value: string) {
   const path = new URL('../.env', import.meta.url)
+  if (!existsSync(path)) return
   const lines = readFileSync(path, 'utf8').split('\n').filter(l => l && !l.startsWith(`${key}=`))
   writeFileSync(path, [...lines, `${key}=${value}`].join('\n') + '\n')
+}
+
+// Owner sessions: the app signs one message with the owner wallet and gets a 12-hour token back.
+// The key is per process, so a restart signs everyone out.
+const SESSION_KEY = randomBytes(32)
+const SESSION_MS = 12 * 60 * 60 * 1000
+const sessionMac = (expires: number) => createHmac('sha256', SESSION_KEY).update(`${VAULT}:${expires}`).digest('base64url')
+const signInMessage = (time: string) => `Sign in to Leash as the vault owner.\nVault: ${VAULT}\nTime: ${time}`
+
+function hasOwnerSession(req: Request) {
+  if (!OWNER_SIGNIN) return true
+  const [expires, mac] = (req.headers.get('authorization') ?? '').replace(/^Bearer /, '').split('.')
+  if (!expires || !mac || Number(expires) < Date.now()) return false
+  const a = Buffer.from(mac), b = Buffer.from(sessionMac(Number(expires)))
+  return a.length === b.length && timingSafeEqual(a, b)
+}
+
+/** Checks a fresh signature from the vault owner and returns a session token, or null. */
+async function signIn(body: { time?: string; signature?: Hex }) {
+  const time = body.time ?? ''
+  const age = Date.now() - Date.parse(time)
+  if (!body.signature || !(age >= -60_000 && age < 10 * 60_000)) return null
+  const owner = await vaultOwner()
+  const ok = await verifyMessage({ address: owner, message: signInMessage(time), signature: body.signature }).catch(() => false)
+  if (!ok) return null
+  const expires = Date.now() + SESSION_MS
+  return `${expires}.${sessionMac(expires)}`
 }
 
 const payeeRef = z.string().min(1).max(60).describe('A saved payee name (e.g. "Weather API") or a 0x address')
@@ -108,26 +143,39 @@ function tokenMatches(candidate: string) {
   return a.length === b.length && timingSafeEqual(a, b)
 }
 
-// The web app reads the link from here to show it in its header. Only the local app origins may read it.
+// The web app reads the link from here to show it to the owner. Only the app's own origins may call these.
 const APP_ORIGINS = (process.env.APP_ORIGINS ?? 'http://localhost:5173,http://localhost:5174').split(',')
-const link = () => `http://127.0.0.1:${PORT}/mcp/${TOKEN}`
-const linkInfo = () => ({ link: LINK_ON ? link() : null, on: LINK_ON, agent: AGENT, vault: VAULT, network: ON_MAINNET ? 'mainnet' : 'testnet' })
+const link = () => `${PUBLIC_URL}/mcp/${TOKEN}`
+const linkInfo = (owner: boolean) => ({
+  link: LINK_ON && owner ? link() : null, on: LINK_ON, agent: AGENT, vault: VAULT, network: ON_MAINNET ? 'mainnet' : 'testnet',
+  // true: the link exists but is shown only after the owner signs in.
+  signin: !owner, message: OWNER_SIGNIN ? signInMessage('<time>') : null,
+})
 
-// Endpoints for the web app (/link, /payees). Only the local app origins may call them; the agent never does.
+// Endpoints for the web app (/link, /payees, /agent-log, /session); the agent never calls them.
+// Reading payee names and the agent log is public. The link and every change need the owner.
 async function appApi(req: Request, url: URL): Promise<Response> {
   const origin = req.headers.get('origin') ?? ''
   if (!APP_ORIGINS.includes(origin)) return new Response('Forbidden', { status: 403 })
   const headers = {
     'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Methods': 'GET, POST, DELETE',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Cache-Control': 'no-store',
     Vary: 'Origin',
   }
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers })
+  const owner = hasOwnerSession(req)
+  const ownerOnly = () => Response.json({ error: 'Sign in with the vault owner wallet first' }, { status: 401, headers })
+
+  if (url.pathname === '/session' && req.method === 'POST') {
+    const token = await signIn((await req.json()) as { time?: string; signature?: Hex })
+    return token ? Response.json({ token, expires_in_ms: SESSION_MS }, { headers }) : Response.json({ error: 'That signature is not from the vault owner, or it is too old' }, { status: 401, headers })
+  }
 
   if (url.pathname === '/link') {
     if (req.method === 'POST') {
+      if (!owner) return ownerOnly()
       const { action } = (await req.json()) as { action?: 'rotate' | 'on' | 'off' }
       if (action === 'rotate') {
         // A new secret: the old link stops working immediately.
@@ -138,12 +186,13 @@ async function appApi(req: Request, url: URL): Promise<Response> {
         saveEnv('LINK_ENABLED', String(LINK_ON))
       }
     }
-    return Response.json(linkInfo(), { headers })
+    return Response.json(linkInfo(owner), { headers })
   }
   if (url.pathname === '/agent-log') return Response.json(recentAttempts(VAULT), { headers })
 
   try {
     if (req.method === 'GET') return Response.json(listPayees(), { headers })
+    if (!owner) return ownerOnly()
     if (req.method === 'POST') {
       const { name, address } = (await req.json()) as { name?: string; address?: string }
       return Response.json(upsertPayee(name ?? '', address ?? ''), { headers })
@@ -159,11 +208,13 @@ async function appApi(req: Request, url: URL): Promise<Response> {
 }
 
 Bun.serve({
-  hostname: '127.0.0.1',
+  hostname: HOST,
   port: PORT,
   async fetch(req) {
     const url = new URL(req.url)
-    if (['/link', '/payees', '/agent-log'].includes(url.pathname)) return appApi(req, url)
+    // Health check for the host. Says nothing about the link.
+    if (url.pathname === '/' || url.pathname === '/health') return new Response('ok')
+    if (['/link', '/payees', '/agent-log', '/session'].includes(url.pathname)) return appApi(req, url)
 
     const [, prefix, token] = url.pathname.split('/')
     if (!LINK_ON || prefix !== 'mcp' || !token || !tokenMatches(token)) return new Response('Not found', { status: 404 })
@@ -180,6 +231,6 @@ Bun.serve({
   },
 })
 
-console.log(`Leash MCP listening on 127.0.0.1:${PORT}`)
+console.log(`Leash MCP listening on ${HOST}:${PORT}${OWNER_SIGNIN ? ' (hosted: owner signs in to see the link)' : ''}`)
 console.log(`${ON_MAINNET ? 'Arc MAINNET' : 'Arc testnet'} · vault ${VAULT} · agent ${AGENT}`)
-console.log('Agent link: shown in the web app header, or http://127.0.0.1:' + PORT + '/mcp/<MCP_TOKEN from mcp/.env>')
+console.log(`Agent link: shown in the web app, or ${PUBLIC_URL}/mcp/<MCP_TOKEN>`)

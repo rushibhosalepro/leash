@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { useNetwork } from '@/network'
+import { AGENT_URL } from '@/agentServer'
 
 // The local MCP server's agent log (Bun SQLite): notes the agent attached, and attempts that never produced a
-// contract event (refused before sending, or reverted). Only this app's origin may read it.
-const LOG_ENDPOINT = 'http://127.0.0.1:8787/agent-log'
+// contract event (refused before sending, or reverted). Only this app's origins may read it.
+const LOG_ENDPOINT = `${AGENT_URL}/agent-log`
 
 export interface AgentAttempt {
   id: number

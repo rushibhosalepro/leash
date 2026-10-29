@@ -3,9 +3,10 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { LEASH_ABI, LEASH_EVENTS } from '@/leash-contract'
 import { useNetwork } from '@/network'
 import bundledPayees from '../../mcp/payees.json'
+import { AGENT_URL, agentHeaders } from '@/agentServer'
 
 // Names live in the local MCP server's payees.json (the contract only knows addresses); it only answers this app's origin.
-const PAYEES_ENDPOINT = 'http://127.0.0.1:8787/payees'
+const PAYEES_ENDPOINT = `${AGENT_URL}/payees`
 // The hosted site has no agent server, so it shows the names as they were when it was built.
 const BUNDLED = bundledPayees as { name: string; address: `0x${string}` }[]
 
@@ -84,13 +85,13 @@ export function usePayeeEditor() {
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['payee-directory'] })
 
   async function save(name: string, address: string) {
-    const res = await fetch(PAYEES_ENDPOINT, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name, address }) })
+    const res = await fetch(PAYEES_ENDPOINT, { method: 'POST', headers: agentHeaders(true), body: JSON.stringify({ name, address }) })
     if (!res.ok) throw new Error(((await res.json()) as { error?: string }).error ?? 'Could not save the payee')
     await refresh()
   }
 
   async function remove(address: string) {
-    await fetch(`${PAYEES_ENDPOINT}?address=${address}`, { method: 'DELETE' })
+    await fetch(`${PAYEES_ENDPOINT}?address=${address}`, { method: 'DELETE', headers: agentHeaders() })
     await refresh()
   }
 

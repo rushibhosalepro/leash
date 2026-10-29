@@ -59,6 +59,9 @@ const wallet = createWalletClient({ chain: CHAIN, transport, account })
 const read = <T>(functionName: string, args: unknown[] = []) =>
   pub.readContract({ address: VAULT, abi: LEASH_ABI, functionName, args }) as Promise<T>
 
+/** The vault owner, read live: the only wallet allowed to see the agent link and change server settings. */
+export const vaultOwner = () => read<Hex>('owner')
+
 // The contract has no getter for the payee lists, so rebuild them from the update events and confirm
 // each address against isAllowlisted / isDenylisted, which are the source of truth.
 async function payeeList(eventName: 'AllowlistUpdated' | 'DenylistUpdated', isIn: 'isAllowlisted' | 'isDenylisted') {
@@ -240,7 +243,7 @@ async function sendPayment(payee: Hex, amountUsdc: string, reason: string): Prom
   for (const log of receipt.logs) {
     if (log.address.toLowerCase() !== VAULT.toLowerCase()) continue
     try {
-      const ev = decodeEventLog({ abi: LEASH_ABI, data: log.data, topics: log.topics }) as { eventName: string; args: Record<string, unknown> }
+      const ev = decodeEventLog({ abi: LEASH_ABI, data: log.data, topics: log.topics }) as unknown as { eventName: string; args: Record<string, unknown> }
       if (ev.eventName === 'Paid' || ev.eventName === 'Held' || ev.eventName === 'Blocked') {
         return {
           outcome: ev.eventName.toLowerCase(),
