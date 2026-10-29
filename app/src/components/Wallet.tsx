@@ -53,13 +53,13 @@ function AgentCard() {
           <div className="display text-5xl tabular-nums leading-none mt-3" style={{ color: 'var(--ink)' }}>
             {agentGas ? Number(agentGas.formatted).toFixed(2) : '—'} <span className="text-lg font-semibold" style={{ color: 'var(--subtle)' }}>USDC</span>
           </div>
-          <div className="text-xs mt-1.5" style={{ color: 'var(--subtle)' }}>Its own wallet, separate from yours. It holds only fee money and signs each payment.</div>
+          <div className="text-xs mt-1.5" style={{ color: 'var(--subtle)' }}>Agent’s own wallet · pays network fees only</div>
         </div>
       )}
 
       <div className="mt-6">
         <div className="flex justify-between text-xs mb-1.5" style={{ color: 'var(--subtle)' }}>
-          <span>Can spend today</span>
+          <span>Daily limit left</span>
           <span><b className="tabular-nums" style={{ color: 'var(--ink)' }}>${money(left)}</b> of ${money(daily)}</span>
         </div>
         <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--surface-strong)' }}>
