@@ -4,6 +4,8 @@ import path from 'path'
 import { nodePolyfills } from 'vite-plugin-node-polyfills'
 
 export default defineConfig({
+  // GitHub Pages serves the site under /leash/; local dev stays at /.
+  base: process.env.PAGES_BASE ?? '/',
   plugins: [react(), nodePolyfills()],
   resolve: {
     alias: {
@@ -37,5 +39,7 @@ export default defineConfig({
   server: {
     allowedHosts: true,
     cors: true,
+    // Payee names are read from ../mcp/payees.json.
+    fs: { allow: ['..'] },
   },
 })

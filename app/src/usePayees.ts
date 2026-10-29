@@ -2,9 +2,12 @@ import { usePublicClient, useReadContracts } from 'wagmi'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { LEASH_ABI, LEASH_EVENTS } from '@/leash-contract'
 import { useNetwork } from '@/network'
+import bundledPayees from '../../mcp/payees.json'
 
 // Names live in the local MCP server's payees.json (the contract only knows addresses); it only answers this app's origin.
 const PAYEES_ENDPOINT = 'http://127.0.0.1:8787/payees'
+// The hosted site has no agent server, so it shows the names as they were when it was built.
+const BUNDLED = bundledPayees as { name: string; address: `0x${string}` }[]
 
 export type PayeeStatus = 'trusted' | 'allowed' | 'asks_first' | 'blocked'
 
@@ -65,7 +68,7 @@ export function usePayees(allowlistSize: bigint | undefined) {
   const status = (a: string): PayeeStatus =>
     blockedSet.has(lower(a)) ? 'blocked' : trustedSet.has(lower(a)) ? 'trusted' : !allowlistSize ? 'allowed' : 'asks_first'
 
-  const saved = directory.data ?? []
+  const saved = directory.data ?? BUNDLED
   const unnamed = [...new Set([...trusted, ...blocked])].filter(a => !saved.some(p => lower(p.address) === lower(a)))
   const entries: PayeeEntry[] = [
     ...saved.map(p => ({ name: p.name, address: p.address, status: status(p.address) })),
