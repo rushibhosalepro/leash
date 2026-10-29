@@ -70,7 +70,7 @@ What it **can never** do: raise a limit, add or unblock a payee, unfreeze, appro
 |---|---|
 | **Real USDC on Arc mainnet (30%)** | Vault [`0xB9D9…8580`](https://explorer.arc.io/address/0xB9D96252a9cAB4CB97159cc395AF3C1597778580), five mainnet transactions in [DEMO.md](DEMO.md): deploy, two payee setups, one paid, one held |
 | **Arc Studio across the build (25%)** | Project [studio.arc.io/app/adcf767c…](https://studio.arc.io/app/adcf767c-bf30-46c9-91f3-26916a400330). Contract, 156 Foundry tests, 50-case corpus and first app all built there. The prompts I sent are in [arc-studio/prompts/](arc-studio/prompts/) |
-| **Working product (25%)** | Web app (wallet, approvals, payees, limits, freeze, bridge) plus an MCP server any agent can connect to with one link |
+| **Working product (25%)** | [Live web app](https://rushibhosalepro.github.io/leash/) (wallet, approvals, payees, limits, freeze, bridge) plus an MCP server any agent can connect to with one link |
 | **Potential (20%)** | Any agent framework that speaks MCP gets a spending account with a human gate, no code changes. See "What's next" |
 
 ## Results
