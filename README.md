@@ -4,7 +4,7 @@
 
 Most agent wallets hand the agent a key and hope. Leash puts the rules in a contract on Arc, so the agent can't raise its own limit, add a payee, or approve itself. The contract refuses.
 
-**Status:** contract and agent live on **Arc mainnet** with real USDC · vault [`0xB9D9…8580`](https://explorer.arc.io/address/0xB9D96252a9cAB4CB97159cc395AF3C1597778580) · built in [Arc Studio](https://studio.arc.io/app/adcf767c-bf30-46c9-91f3-26916a400330) · web app runs locally (`bun run dev`).
+**Status:** contract and agent live on **Arc mainnet** with real USDC · vault [`0xB9D9…8580`](https://explorer.arc.io/address/0xB9D96252a9cAB4CB97159cc395AF3C1597778580) · built in [Arc Studio](https://studio.arc.io/app/adcf767c-bf30-46c9-91f3-26916a400330) · **live app: [rushibhosalepro.github.io/leash](https://rushibhosalepro.github.io/leash/)** (no wallet needed to look around).
 
 ---
 
@@ -87,7 +87,9 @@ The 12 wrong cases are worth explaining. The on-chain corpus run was interrupted
 
 ## Run it
 
-Needs [Bun](https://bun.sh). Two minutes to see the live mainnet vault, read-only, with no wallet:
+**Fastest:** open [rushibhosalepro.github.io/leash](https://rushibhosalepro.github.io/leash/). It reads the live mainnet vault straight from Arc, no wallet or server needed.
+
+To run it yourself (needs [Bun](https://bun.sh)):
 
 ```bash
 git clone https://github.com/rushibhosalepro/leash.git
