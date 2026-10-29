@@ -28,8 +28,8 @@ export const NETWORKS: Record<NetworkId, Network> = {
     id: 'mainnet',
     label: 'Mainnet',
     chain: arc,
-    vault: null,
-    fromBlock: 0n,
+    vault: '0xB9D96252a9cAB4CB97159cc395AF3C1597778580',
+    fromBlock: 28505443n,
     explorer: 'https://explorer.arc.io',
   },
 }
@@ -61,7 +61,8 @@ function initialNetwork(): NetworkId {
     const saved = localStorage.getItem(STORAGE_KEY)
     if (saved === 'testnet' || saved === 'mainnet') return saved
   } catch { /* storage unavailable */ }
-  return LIVE_NETWORKS[0] ?? 'testnet'
+  // Real USDC first: open on mainnet whenever it has a vault.
+  return NETWORKS.mainnet.vault ? 'mainnet' : LIVE_NETWORKS[0] ?? 'testnet'
 }
 
 const NetworkContext = createContext<{ network: Network; setNetwork: (id: NetworkId) => void } | null>(null)
