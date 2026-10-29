@@ -57,8 +57,8 @@ function useChainFeed() {
     queryFn: async (): Promise<Tx[]> => {
       const fromBlock = network.fromBlock
       const [logs, memos] = await Promise.all([
-        client!.getContractEvents({ address: vault!, abi: LEASH_EVENTS, fromBlock }),
-        client!.getContractEvents({ address: MEMO_ADDRESS, abi: MEMO_EVENT, eventName: 'Memo', args: { target: vault! }, fromBlock }),
+        client!.getContractEvents({ address: vault!, abi: LEASH_EVENTS, fromBlock, toBlock: 'latest' }),
+        client!.getContractEvents({ address: MEMO_ADDRESS, abi: MEMO_EVENT, eventName: 'Memo', args: { target: vault! }, fromBlock, toBlock: 'latest' }),
       ])
       const of = <N extends string>(name: N) => logs.filter(l => l.eventName === name) as unknown as
         { args: { id?: bigint; amount?: bigint } & Record<string, unknown>; transactionHash: `0x${string}`; blockNumber: bigint }[]

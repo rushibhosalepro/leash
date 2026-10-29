@@ -19,10 +19,14 @@ type Filter = 'all' | 'sent' | 'held' | 'blocked'
 const matches = (f: Filter, t: Tx) =>
   f === 'all' || (f === 'sent' && t.status === 'sent') || (f === 'held' && isHeld(t.status)) || (f === 'blocked' && t.status === 'blocked')
 
-/** The vault as a card: balance, today's allowance, who the agent is. */
+/** The vault as a card: what it holds, today's allowance, and the agent's own separate wallet. */
 function AgentCard() {
   const { network } = useNetwork()
   const { balance, remainingToday, policy, frozen } = useVault()
+  // The agent signs from its own wallet, which only holds a little USDC for network fees.
+  const { data: agentGas } = useBalance({ address: policy?.agent, chainId: network.chain.id, query: { enabled: !!policy, refetchInterval: 15_000 } })
+  const [copied, setCopied] = useState(false)
+  const copyAgent = () => { if (!policy) return; void navigator.clipboard.writeText(policy.agent); setCopied(true); setTimeout(() => setCopied(false), 1500) }
   const { online, info } = useAgentLink()
   const { lastUsedAt } = useAgentLog()
   const daily = policy?.dailyCap ?? 0n
@@ -36,7 +40,7 @@ function AgentCard() {
       style={{ ...card, background: 'linear-gradient(145deg, #1f2024 0%, #141518 100%)' }}>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: 'var(--subtle)' }}>Agent wallet</div>
+          <div className="text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: 'var(--subtle)' }}>Agent spending vault</div>
           <div className="text-sm font-semibold mt-0.5" style={{ color: 'var(--ink)' }}>Your AI agent · {connection}</div>
         </div>
         <span className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold rounded-full"
@@ -46,7 +50,7 @@ function AgentCard() {
       </div>
 
       <div className="mt-6">
-        <div className="text-xs" style={{ color: 'var(--subtle)' }}>Balance</div>
+        <div className="text-xs" style={{ color: 'var(--subtle)' }}>In the vault · the agent can spend only from here, inside your rules</div>
         <div className="display text-5xl tabular-nums leading-none mt-1" style={{ color: 'var(--ink)' }}>
           {money(balance)} <span className="text-lg font-semibold" style={{ color: 'var(--subtle)' }}>USDC</span>
         </div>
@@ -60,12 +64,29 @@ function AgentCard() {
         <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--surface-strong)' }}>
           <div className="h-full rounded-full" style={{ width: `${pct}%`, background: 'var(--ink)' }} />
         </div>
-        <div className="flex justify-between mt-3 text-[11px] mono" style={{ color: 'var(--subtle)' }}>
-          {policy && <a href={addressUrl(network, policy.agent)} target="_blank" rel="noopener noreferrer" title="Agent wallet">
-            {policy.agent.slice(0, 6)} •••• {policy.agent.slice(-4)}
-          </a>}
-          {network.vault && <a href={addressUrl(network, network.vault)} target="_blank" rel="noopener noreferrer">Vault {shortAddr(network.vault)}</a>}
-        </div>
+        {policy && (
+          <div className="mt-4 px-3 py-2.5 text-xs" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)', borderRadius: 12 }}>
+            <div className="flex items-center justify-between gap-2">
+              <span style={{ color: 'var(--subtle)' }}>Agent’s own wallet · a separate address that signs payments</span>
+              <span className="tabular-nums shrink-0" style={{ color: 'var(--ink-2)' }} title="Kept only for network fees">
+                {agentGas ? Number(agentGas.formatted).toFixed(2) : '—'} USDC for fees
+              </span>
+            </div>
+            <div className="flex items-center gap-2 mt-1">
+              <a href={addressUrl(network, policy.agent)} target="_blank" rel="noopener noreferrer" className="mono break-all underline-offset-2 hover:underline" style={{ color: 'var(--ink)' }}>
+                {policy.agent}
+              </a>
+              <button onClick={copyAgent} className="tile shrink-0 px-2 py-0.5 text-[11px]" style={{ border: '1px solid var(--border)', borderRadius: 8, color: 'var(--muted)' }}>
+                {copied ? 'Copied' : 'Copy'}
+              </button>
+            </div>
+          </div>
+        )}
+        {network.vault && (
+          <div className="mt-2 text-[11px] mono text-right" style={{ color: 'var(--subtle)' }}>
+            <a href={addressUrl(network, network.vault)} target="_blank" rel="noopener noreferrer">Vault {shortAddr(network.vault)}</a>
+          </div>
+        )}
       </div>
     </div>
   )

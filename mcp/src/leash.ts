@@ -175,7 +175,7 @@ export async function checkPayee(payee: Hex) {
 }
 
 const RULE_WORDS: Record<string, string> = {
-  per_payment_cap: 'more than your whole daily limit',
+  per_payment_cap: 'over the vault’s per-payment limit',
   payee_per_payment_cap: 'over the per-payment limit the owner set for this payee',
   payee_daily_cap: 'over the daily limit the owner set for this payee',
   daily_cap: 'over what is left of your daily limit',
@@ -260,7 +260,7 @@ async function sendPayment(payee: Hex, amountUsdc: string, reason: string): Prom
 }
 
 async function vaultEvents(eventName: string, args?: Record<string, unknown>) {
-  return pub.getContractEvents({ address: VAULT, abi: LEASH_ABI, eventName, args, fromBlock: FROM_BLOCK })
+  return pub.getContractEvents({ address: VAULT, abi: LEASH_ABI, eventName, args, fromBlock: FROM_BLOCK, toBlock: 'latest' })
 }
 
 export async function paymentStatus(id: string) {
@@ -285,7 +285,7 @@ export async function pendingForOwner() {
 export async function recentSpending(limit: number) {
   const [paid, held, blocked, memos, remaining] = await Promise.all([
     vaultEvents('Paid'), vaultEvents('Held'), vaultEvents('Blocked'),
-    pub.getContractEvents({ address: MEMO_ADDRESS, abi: [MEMO_EVENT], eventName: 'Memo', args: { target: VAULT }, fromBlock: FROM_BLOCK }),
+    pub.getContractEvents({ address: MEMO_ADDRESS, abi: [MEMO_EVENT], eventName: 'Memo', args: { target: VAULT }, fromBlock: FROM_BLOCK, toBlock: 'latest' }),
     read<bigint>('remainingToday'),
   ])
   const memoByTx = new Map(memos.map(m => [m.transactionHash, hexToString((m.args as { memo: Hex }).memo)]))

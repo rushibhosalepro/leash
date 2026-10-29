@@ -83,7 +83,7 @@ export const MEMO_EVENT = parseAbi([
 ])
 
 const RULE_WORDS: Record<string, string> = {
-  per_payment_cap: 'more than the daily limit',
+  per_payment_cap: 'over the per-payment limit',
   payee_per_payment_cap: 'over this payee’s per-payment limit',
   payee_daily_cap: 'over this payee’s daily limit',
   daily_cap: 'over today’s limit',

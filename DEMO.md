@@ -1,6 +1,28 @@
-# Leash — recorded demo on Arc testnet
+# Leash — recorded demo on Arc mainnet and testnet
 
 > Your AI agent pays on its own. Above the line, it asks.
+
+## Arc mainnet (real USDC)
+
+**Vault:** [`0xB9D96252a9cAB4CB97159cc395AF3C1597778580`](https://explorer.arc.io/address/0xB9D96252a9cAB4CB97159cc395AF3C1597778580)
+· owner `0x5866…8ea0` (a human's MetaMask) · agent `0x49f6…ACbF` (its own wallet, held by the local MCP server)
+· rules: **$0.25 per payment, $1.00 a day**, payee `DATA API` limited to $0.10 per payment.
+
+The USDC came onto Arc through the app's own **Bring USDC to Arc** panel (Arc App Kit, Circle CCTP with the
+Forwarding Service): 2.9 USDC from Base, about 0.017 USDC in fees, mint submitted on Arc by Circle.
+
+| # | What | Who signed | Result | Transaction | Fee (USDC) |
+|---|---|---|---|---|---|
+| 1 | Deploy the vault (contract compiled and tested in Arc Studio) with a $1 deposit | owner | vault live, 1 USDC inside | [`0x4029…1582`](https://explorer.arc.io/tx/0x4029e7c0208f79fcc02542abdc843b303087ea8965c98bd0c36f4cdba2011582) | 0.059 |
+| 2 | Activate payee `DATA API` (`0x9E75…eB98`, the owner's second account) | owner | `AllowlistUpdated` | [`0x9178…4c4d`](https://explorer.arc.io/tx/0x91780b4012defa78a1fe481fa775c0d696d0d8dbeb5555f58bc9a21cd9aa4c4d) | 0.0026 |
+| 3 | Set its per-payment limit to $0.10 | owner | `PayeeLimitSet` | [`0x5b2e…9589`](https://explorer.arc.io/tx/0x5b2eff3e737ce0fe5748d79d0ada093d461aabc38a0b2fc1803eddcefedd9589) | 0.0020 |
+| 4 | Agent pays **$0.05** to `DATA API`, reason *"Data API: 1 dataset query"* | agent | **Paid alone** (payment #1): 0.05 USDC moved | [`0x2942…da70`](https://explorer.arc.io/tx/0x29428fcea41f194ec775a1bbfb7ac76c0765e5ee273a479ebc3dd0a5f370da70) | 0.0043 |
+| 5 | Agent tries **$0.30** to the same payee, reason *"Data API: bulk export"* | agent | **Held for the owner** (payment #2, rule `per_payment_cap`): nothing moved | [`0x2fdc…a7c3`](https://explorer.arc.io/tx/0x2fdc2fcc28f12095639a3210f31e007f5cc15c9a9cc1c0b2d54b5f2882e0a7c3) | 0.0053 |
+
+Balances checked on-chain afterwards: vault **0.95**, payee **0.05**: only the in-rules payment moved money.
+The held $0.30 waits in the vault until the owner approves or denies it.
+
+## Arc testnet (first recording)
 
 Every row below is a real Arc testnet transaction made by an AI agent connected to Leash over MCP,
 or by the owner's wallet. Click any link to check it on the explorer.

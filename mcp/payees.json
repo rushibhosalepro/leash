@@ -1,5 +1,9 @@
 [
   {
+    "name": "DATA API",
+    "address": "0x9E75671e1BBCbBb337570B6A44e4E8e6bca0eB98"
+  },
+  {
     "name": "weather API",
     "address": "0x7F3E00000000000000000000000000000000c19a"
   }

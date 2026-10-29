@@ -27,7 +27,7 @@ function useOnchainList(kind: 'trusted' | 'blocked') {
     refetchInterval: 15000,
     queryFn: async () => {
       const logs = await client!.getContractEvents({
-        address: vault!, abi: LEASH_EVENTS, eventName: kind === 'trusted' ? 'AllowlistUpdated' : 'DenylistUpdated', fromBlock: network.fromBlock,
+        address: vault!, abi: LEASH_EVENTS, eventName: kind === 'trusted' ? 'AllowlistUpdated' : 'DenylistUpdated', fromBlock: network.fromBlock, toBlock: 'latest',
       })
       return [...new Set(logs.map(l => (l.args as { payee: `0x${string}` }).payee))]
     },
