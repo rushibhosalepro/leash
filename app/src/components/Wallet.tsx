@@ -32,8 +32,19 @@ function AgentCard() {
   return (
     <div className="relative overflow-hidden p-5 flex flex-col justify-between min-h-[230px]"
       style={{ ...card, background: 'linear-gradient(145deg, #1f2024 0%, #141518 100%)' }}>
-      <div className="flex items-start justify-end gap-3">
-        <span className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold rounded-full"
+      <div className="flex items-center justify-between gap-3">
+        {policy ? (
+          <div className="flex items-center gap-2 min-w-0">
+            <a href={addressUrl(network, policy.agent)} target="_blank" rel="noopener noreferrer" title={`${policy.agent} · open on the explorer`}
+              className="mono text-sm underline-offset-2 hover:underline" style={{ color: 'var(--ink)' }}>
+              {shortAddr(policy.agent)}
+            </a>
+            <button onClick={copyAgent} title="Copy the full agent wallet address" className="tile shrink-0 px-2 py-0.5 text-[11px]" style={{ border: '1px solid var(--border)', borderRadius: 8, color: 'var(--muted)' }}>
+              {copied ? 'Copied' : 'Copy'}
+            </button>
+          </div>
+        ) : <span />}
+        <span className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold rounded-full shrink-0"
           style={{ background: frozen ? 'var(--blocked-bg)' : 'var(--paid-bg)', color: frozen ? 'var(--blocked)' : 'var(--paid)' }}>
           <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'currentColor' }} />{frozen ? 'Frozen' : 'Running'}
         </span>
@@ -41,16 +52,7 @@ function AgentCard() {
 
       {policy && (
         <div className="mt-5">
-          <div className="flex items-center gap-2">
-            <a href={addressUrl(network, policy.agent)} target="_blank" rel="noopener noreferrer" title="Open the agent wallet on the explorer"
-              className="mono text-sm break-all underline-offset-2 hover:underline" style={{ color: 'var(--ink)' }}>
-              {policy.agent}
-            </a>
-            <button onClick={copyAgent} className="tile shrink-0 px-2 py-0.5 text-[11px]" style={{ border: '1px solid var(--border)', borderRadius: 8, color: 'var(--muted)' }}>
-              {copied ? 'Copied' : 'Copy'}
-            </button>
-          </div>
-          <div className="display text-5xl tabular-nums leading-none mt-3" style={{ color: 'var(--ink)' }}>
+          <div className="display text-5xl tabular-nums leading-none" style={{ color: 'var(--ink)' }}>
             {agentGas ? Number(agentGas.formatted).toFixed(2) : '—'} <span className="text-lg font-semibold" style={{ color: 'var(--subtle)' }}>USDC</span>
           </div>
           <div className="text-xs mt-1.5" style={{ color: 'var(--subtle)' }}>Agent’s own wallet · pays network fees only</div>
