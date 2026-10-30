@@ -1,5 +1,6 @@
-// The opening hook for the Leash walkthrough: the problem in one scene, the same scene on a leash, the name,
-// then a chapter card that hands over to the screen recording.
+// The 40-second Leash intro, scene by scene to the voiceover script: the hook, the problem, Leash,
+// the real mainnet payments, what the agent can't do, and the close. Captions carry the voiceover
+// so the video still works muted.
 import type { CSSProperties, ReactNode } from 'react'
 import { AbsoluteFill, Easing, Sequence, interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion'
 import { loadFont } from '@remotion/google-fonts/JetBrainsMono'
@@ -9,7 +10,7 @@ const { fontFamily } = loadFont('normal', { weights: ['400', '500', '700', '800'
 const C = {
   bg: '#050506',
   ink: '#f2f2f2',
-  muted: '#7d7f86',
+  muted: '#8a8c93',
   faint: '#3a3c42',
   panel: '#0d0f13',
   border: '#22252c',
@@ -18,15 +19,34 @@ const C = {
   paid: '#3ddc84',
 }
 
-// Scene boundaries, in frames at 30 fps.
+const sec = (s: number) => Math.round(s * 30)
+
+// Scene boundaries follow the script's timecodes.
 const S = {
-  problem: { from: 0, len: 180 },
-  stake: { from: 180, len: 90 },
-  leashed: { from: 270, len: 130 },
-  name: { from: 400, len: 95 },
-  chapter: { from: 495, len: 65 },
+  hook: { from: 0, len: sec(4) },
+  problem: { from: sec(4), len: sec(6) },
+  meet: { from: sec(10), len: sec(6) },
+  proof: { from: sec(16), len: sec(11) },
+  rules: { from: sec(27), len: sec(7) },
+  close: { from: sec(34), len: sec(6) },
 }
-export const HOOK_FRAMES = S.chapter.from + S.chapter.len
+export const HOOK_FRAMES = S.close.from + S.close.len
+
+// The voiceover, split into caption lines with their start and end in seconds.
+const CAPTIONS: [number, number, string][] = [
+  [0.2, 3.9, 'What happens when your AI agent gets access to your money… and decides to spend it all?'],
+  [4.1, 6.9, 'You give it a wallet to pay for API calls, tools, and services.'],
+  [6.9, 9.9, 'But what happens when it decides to spend more than you intended?'],
+  [10.1, 12.9, 'I built Leash. A spending control layer'],
+  [12.9, 15.9, 'that lets AI agents pay on their own, without giving them control over your money.'],
+  [16.1, 19.5, 'Here’s a real transaction on Arc mainnet.'],
+  [19.5, 22.6, 'My agent tries to pay five cents. Paid.'],
+  [22.6, 26.9, 'Then it tries to pay thirty cents. Held for my approval. The limit was twenty-five cents.'],
+  [27.1, 30.4, 'The agent can’t raise its own limit, add new payees, or approve its own payments.'],
+  [30.4, 33.9, 'Those permissions belong to the owner, enforced by a smart contract.'],
+  [34.1, 37.0, 'AI agents should be able to spend money.'],
+  [37.0, 39.9, 'They just shouldn’t control how much. That’s Leash.'],
+]
 
 const clamp = { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' } as const
 
@@ -37,30 +57,12 @@ function useSceneFade(len: number, fadeIn = 10, fadeOut = 10) {
 }
 
 /** Types text out from `start`, a fixed number of characters per frame. */
-function typed(text: string, frame: number, start: number, perFrame = 1.4) {
-  const n = Math.max(0, Math.floor((frame - start) * perFrame))
-  return text.slice(0, n)
-}
+const typed = (text: string, frame: number, start: number, perFrame = 1.4) =>
+  text.slice(0, Math.max(0, Math.floor((frame - start) * perFrame)))
 
-const Caret = ({ on }: { on: boolean }) => {
-  const f = useCurrentFrame()
-  return <span style={{ opacity: on && Math.floor(f / 8) % 2 === 0 ? 1 : 0, color: C.ink }}>▍</span>
-}
-
-/** Dark grid with a soft vignette, the backdrop for every scene. */
-const Backdrop = () => {
-  const f = useCurrentFrame()
-  return (
-    <AbsoluteFill style={{ background: C.bg }}>
-      <AbsoluteFill style={{
-        backgroundImage: `linear-gradient(${C.faint}22 1px, transparent 1px), linear-gradient(90deg, ${C.faint}22 1px, transparent 1px)`,
-        backgroundSize: '48px 48px',
-        backgroundPosition: `0 ${-(f * 0.15)}px`,
-      }} />
-      <AbsoluteFill style={{ background: 'radial-gradient(ellipse at center, transparent 30%, #000 85%)' }} />
-    </AbsoluteFill>
-  )
-}
+/** 0 → 1 as the frame passes `start`, eased. */
+const rise = (frame: number, start: number, length = 14) =>
+  interpolate(frame, [start, start + length], [0, 1], { ...clamp, easing: Easing.out(Easing.cubic) })
 
 /** RGB-split jitter for a few frames, the "something went wrong" beat. */
 function glitch(frame: number, at: number, length = 10): CSSProperties {
@@ -70,136 +72,202 @@ function glitch(frame: number, at: number, length = 10): CSSProperties {
   return { textShadow: `${x * 2}px 0 ${C.red}, ${-x * 2}px 0 #4dd2ff`, transform: `translateX(${x}px)` }
 }
 
-const Window = ({ title, children, style }: { title: string; children: ReactNode; style?: CSSProperties }) => (
-  <div style={{ width: 1080, background: C.panel, border: `1px solid ${C.border}`, borderRadius: 14, boxShadow: '0 30px 80px #000c', overflow: 'hidden', ...style }}>
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 20px', borderBottom: `1px solid ${C.border}`, color: C.muted, fontSize: 20 }}>
-      <span style={{ color: C.faint }}>● ● ●</span>
-      <span>{title}</span>
+const glow = (color = C.ink) => ({ textShadow: `0 0 28px ${color}77` })
+
+/** Dark grid with a soft vignette, the backdrop for every scene. */
+const Backdrop = () => {
+  const f = useCurrentFrame()
+  return (
+    <AbsoluteFill style={{ background: C.bg }}>
+      <AbsoluteFill style={{
+        backgroundImage: `linear-gradient(${C.faint}26 1px, transparent 1px), linear-gradient(90deg, ${C.faint}26 1px, transparent 1px)`,
+        backgroundSize: '48px 48px',
+        backgroundPosition: `0 ${-(f * 0.15)}px`,
+      }} />
+      <AbsoluteFill style={{ background: 'radial-gradient(ellipse at center, transparent 30%, #000 85%)' }} />
+    </AbsoluteFill>
+  )
+}
+
+const Label = ({ children, color = C.muted, style }: { children: ReactNode; color?: string; style?: CSSProperties }) => (
+  <div style={{ color, fontSize: 22, letterSpacing: 6, ...style }}>{children}</div>
+)
+
+const Panel = ({ children, style }: { children: ReactNode; style?: CSSProperties }) => (
+  <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 16, boxShadow: '0 30px 80px #000c', ...style }}>{children}</div>
+)
+
+// 0–4 s: the line that makes you stay.
+const HookScene = () => {
+  const f = useCurrentFrame()
+  const opacity = useSceneFade(S.hook.len, 4, 10)
+  return (
+    <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center', opacity }}>
+      <div style={{ color: C.ink, fontSize: 76, fontWeight: 800, letterSpacing: -1, ...glow(), ...glitch(f, 62, 12) }}>
+        {typed('YOUR AI AGENT HAS YOUR WALLET.', f, 6, 1.1)}
+      </div>
+    </AbsoluteFill>
+  )
+}
+
+// 4–10 s: wallet handed over, a payment goes out, spending runs past what you meant.
+const ProblemScene = () => {
+  const f = useCurrentFrame()
+  const opacity = useSceneFade(S.problem.len, 8, 10)
+  const steps = [
+    { at: 6, icon: '◧', text: 'Agent receives wallet access' },
+    { at: 46, icon: '→', text: 'Agent initiates payment' },
+    { at: 86, icon: '!', text: 'Spending goes beyond your limit', bad: true },
+  ]
+  // Spend bar: grows to the limit, then past it and turns red.
+  const spend = interpolate(f, [56, 100, 150], [0, 0.62, 1], clamp)
+  const over = spend > 0.62
+  return (
+    <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center', opacity, gap: 56 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 22, width: 980 }}>
+        {steps.map(s => {
+          const r = rise(f, s.at)
+          return (
+            <div key={s.text} style={{ display: 'flex', alignItems: 'center', gap: 22, opacity: r, transform: `translateX(${(1 - r) * -24}px)` }}>
+              <span style={{ width: 54, height: 54, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, fontWeight: 800,
+                border: `1px solid ${s.bad ? C.red : C.border}`, color: s.bad ? C.red : C.ink, background: s.bad ? `${C.red}1a` : C.panel }}>{s.icon}</span>
+              <span style={{ color: s.bad ? C.red : C.ink, fontSize: 38, fontWeight: s.bad ? 800 : 500, ...(s.bad ? glitch(f, 88, 10) : {}) }}>{s.text}</span>
+            </div>
+          )
+        })}
+      </div>
+      <div style={{ width: 980, opacity: rise(f, 50) }}>
+        <div style={{ position: 'relative', height: 18, borderRadius: 9, background: '#15171c' }}>
+          <div style={{ position: 'absolute', inset: 0, width: `${spend * 100}%`, borderRadius: 9, background: over ? C.red : C.ink, boxShadow: over ? `0 0 24px ${C.red}` : 'none' }} />
+          <div style={{ position: 'absolute', left: '62%', top: -14, bottom: -14, width: 2, background: C.muted }} />
+        </div>
+        <div style={{ position: 'relative', height: 40 }}>
+          <span style={{ position: 'absolute', left: '62%', transform: 'translateX(-50%)', top: 18, color: C.muted, fontSize: 20 }}>what you intended</span>
+        </div>
+      </div>
+    </AbsoluteFill>
+  )
+}
+
+// 10–16 s: Leash, and the one-line promise.
+const MeetScene = () => {
+  const f = useCurrentFrame()
+  const { fps } = useVideoConfig()
+  const opacity = useSceneFade(S.meet.len, 8, 10)
+  const pop = spring({ frame: f - 4, fps, config: { damping: 16, stiffness: 120 } })
+  return (
+    <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center', opacity }}>
+      <Label style={{ opacity: rise(f, 0) }}>MEET</Label>
+      <div style={{ color: C.ink, fontSize: 168, fontWeight: 800, letterSpacing: -5, transform: `scale(${0.9 + 0.1 * pop})`, opacity: pop, ...glow() }}>LEASH</div>
+      <div style={{ display: 'flex', gap: 28, marginTop: 26, fontSize: 40, fontWeight: 700 }}>
+        <span style={{ color: C.paid, opacity: rise(f, 60) }}>Your agent can spend.</span>
+        <span style={{ color: C.red, opacity: rise(f, 92) }}>It cannot change the rules.</span>
+      </div>
+    </AbsoluteFill>
+  )
+}
+
+const Decision = ({ at, amount, color, verdict, detail, tx }: { at: number; amount: string; color: string; verdict: string; detail: string; tx: string }) => {
+  const f = useCurrentFrame()
+  const { fps } = useVideoConfig()
+  const row = rise(f, at)
+  const stamp = spring({ frame: f - at - 26, fps, config: { damping: 12, stiffness: 180 } })
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr 300px', alignItems: 'center', gap: 24, padding: '26px 36px', borderTop: `1px solid ${C.border}`, opacity: row }}>
+      <span style={{ color: C.ink, fontSize: 52, fontWeight: 800 }}>{amount}</span>
+      <span style={{ display: 'flex', flexDirection: 'column', gap: 6, opacity: f >= at + 26 ? 1 : 0 }}>
+        <span style={{ alignSelf: 'flex-start', padding: '8px 16px', borderRadius: 8, border: `1px solid ${color}`, background: `${color}1f`, color, fontSize: 32, fontWeight: 800, transform: `scale(${0.8 + 0.2 * stamp})` }}>{verdict}</span>
+        <span style={{ color: C.muted, fontSize: 22 }}>{detail}</span>
+      </span>
+      <span style={{ color: C.muted, fontSize: 20, textAlign: 'right', opacity: f >= at + 40 ? 1 : 0 }}>tx {tx}<br />explorer.arc.io</span>
     </div>
-    <div style={{ padding: '28px 32px', display: 'flex', flexDirection: 'column', gap: 22, minHeight: 330 }}>{children}</div>
-  </div>
-)
+  )
+}
 
-const UserMsg = ({ text }: { text: string }) => (
-  <div style={{ alignSelf: 'flex-end', background: '#1b1e25', color: C.ink, padding: '12px 18px', borderRadius: 10, fontSize: 26 }}>{text}</div>
-)
+// 16–27 s: the real mainnet payments, paid and held.
+const ProofScene = () => {
+  const f = useCurrentFrame()
+  const opacity = useSceneFade(S.proof.len, 10, 12)
+  return (
+    <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center', opacity, gap: 30 }}>
+      <Panel style={{ width: 1240, overflow: 'hidden' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '22px 36px' }}>
+          <Label color={C.ink} style={{ fontWeight: 700 }}>AGENT PAYMENT REQUEST</Label>
+          <span style={{ color: C.muted, fontSize: 20 }}>● Arc mainnet · real USDC</span>
+        </div>
+        <Decision at={60} amount="$0.05" color={C.paid} verdict="✓ PAID" detail="inside the rules, moved on its own" tx="0x2942…da70" />
+        <Decision at={156} amount="$0.30" color={C.held} verdict="✕ HELD" detail="over the limit, waiting for the owner" tx="0x2fdc…a7c3" />
+      </Panel>
+      <div style={{ color: C.ink, fontSize: 34, fontWeight: 800, letterSpacing: 4, opacity: rise(f, 230), ...glow() }}>$0.25 MAX PER PAYMENT</div>
+    </AbsoluteFill>
+  )
+}
 
-const AgentLine = ({ children, color = C.ink, style }: { children: ReactNode; color?: string; style?: CSSProperties }) => (
-  <div style={{ color, fontSize: 26, lineHeight: 1.4, ...style }}>{children}</div>
-)
+// 27–34 s: what the agent can do, and what it never can.
+const RulesScene = () => {
+  const f = useCurrentFrame()
+  const opacity = useSceneFade(S.rules.len, 8, 10)
+  const cannot = ['raise its own limit', 'add new payees', 'approve its own payments']
+  return (
+    <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center', opacity, gap: 40 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 18, alignItems: 'flex-start' }}>
+        <div style={{ fontSize: 72, fontWeight: 800, color: C.ink, opacity: rise(f, 4) }}>AGENT: PAY <span style={{ color: C.paid }}>✓</span></div>
+        <div style={{ fontSize: 72, fontWeight: 800, color: C.ink, opacity: rise(f, 30), ...glitch(f, 34, 10) }}>AGENT: CHANGE RULES <span style={{ color: C.red }}>✕</span></div>
+      </div>
+      <div style={{ display: 'flex', gap: 18 }}>
+        {cannot.map((c, i) => (
+          <span key={c} style={{ padding: '12px 20px', borderRadius: 10, border: `1px solid ${C.red}55`, background: `${C.red}12`, color: C.ink, fontSize: 26, opacity: rise(f, 70 + i * 12) }}>
+            <span style={{ color: C.red }}>✕ </span>{c}
+          </span>
+        ))}
+      </div>
+      <div style={{ color: C.muted, fontSize: 24, opacity: rise(f, 120) }}>Owner-only in the contract. The agent’s key gets <span style={{ color: C.ink }}>NotOwner</span>.</div>
+    </AbsoluteFill>
+  )
+}
 
-const Badge = ({ color, children, appear }: { color: string; children: ReactNode; appear: number }) => {
+// 34–40 s: the close.
+const CloseScene = () => {
   const f = useCurrentFrame()
   const { fps } = useVideoConfig()
-  const s = spring({ frame: f - appear, fps, config: { damping: 14, stiffness: 160 } })
-  if (f < appear) return null
-  return (
-    <div style={{
-      alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 12, padding: '10px 16px', borderRadius: 8,
-      border: `1px solid ${color}`, background: `${color}1f`, color, fontSize: 24, fontWeight: 700,
-      transform: `scale(${0.85 + 0.15 * s})`, opacity: s,
-    }}>{children}</div>
-  )
-}
-
-// 0–6 s: an agent with a card buys the expensive thing, and nothing stops it.
-const Problem = () => {
-  const f = useCurrentFrame()
-  const opacity = useSceneFade(S.problem.len, 12, 12)
-  const ask = 'Buy the data we need for the report.'
-  const reply = 'Fastest way: the bulk export.'
-  const tool = '→ pay("DATA API", $400.00)'
-  const charged = f >= 128
-  return (
-    <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center', opacity }}>
-      <Window title="agent://shopping-agent · has your card">
-        {f >= 14 && <UserMsg text={typed(ask, f, 14, 1.6) || ' '} />}
-        {f >= 54 && <AgentLine>{typed(reply, f, 54, 1.2)}<Caret on={f < 82} /></AgentLine>}
-        {f >= 92 && <AgentLine color={C.muted}>{typed(tool, f, 92, 1.4)}</AgentLine>}
-        {charged && (
-          <AgentLine color={C.red} style={{ fontWeight: 800, fontSize: 34, ...glitch(f, 128, 14) }}>
-            CHARGED $400.00 <span style={{ fontWeight: 400, fontSize: 24, color: C.muted }}>· no one approved it</span>
-          </AgentLine>
-        )}
-      </Window>
-      {/* A red flash on the charge. */}
-      <AbsoluteFill style={{ background: C.red, opacity: interpolate(f, [128, 131, 140], [0, 0.18, 0], clamp), pointerEvents: 'none' }} />
-    </AbsoluteFill>
-  )
-}
-
-// 6–9 s: the stake, said plainly.
-const Stake = () => {
-  const f = useCurrentFrame()
-  const opacity = useSceneFade(S.stake.len, 8, 10)
-  const line2 = interpolate(f, [38, 50], [0, 1], clamp)
-  return (
-    <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center', opacity, gap: 26 }}>
-      <div style={{ color: C.ink, fontSize: 46 }}>{typed('Your AI agent can spend your money.', f, 4, 1.6)}</div>
-      <div style={{ color: C.ink, fontSize: 52, fontWeight: 800, opacity: line2, textShadow: `0 0 24px ${C.ink}88` }}>Nothing says no.</div>
-    </AbsoluteFill>
-  )
-}
-
-// 9–13 s: the same request, with the rules in a contract.
-const Leashed = () => {
-  const f = useCurrentFrame()
-  const opacity = useSceneFade(S.leashed.len, 10, 12)
-  return (
-    <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center', opacity }}>
-      <Window title="agent://shopping-agent · on a Leash">
-        <UserMsg text="Buy the data we need for the report." />
-        {f >= 10 && <AgentLine color={C.muted}>{typed('→ leash_pay("DATA API", $0.30, "bulk export")', f, 10, 2)}</AgentLine>}
-        <Badge color={C.held} appear={36}>HELD <span style={{ fontWeight: 400, color: C.ink }}>· over your $0.25 limit · waiting for your yes</span></Badge>
-        {f >= 58 && <AgentLine color={C.muted}>{typed('→ leash_pay("DATA API", $0.05, "1 query")', f, 58, 2)}</AgentLine>}
-        <Badge color={C.paid} appear={82}>PAID ALONE <span style={{ fontWeight: 400, color: C.ink }}>· 0.05 USDC moved, inside your rules</span></Badge>
-      </Window>
-    </AbsoluteFill>
-  )
-}
-
-// 13–16 s: the name and the claim.
-const Name = () => {
-  const f = useCurrentFrame()
-  const { fps } = useVideoConfig()
-  const opacity = useSceneFade(S.name.len, 8, 10)
+  const opacity = useSceneFade(S.close.len, 8, 4)
   const pop = spring({ frame: f, fps, config: { damping: 16, stiffness: 120 } })
-  const sub = interpolate(f, [18, 32], [0, 1], { ...clamp, easing: Easing.out(Easing.cubic) })
-  const foot = interpolate(f, [40, 54], [0, 1], clamp)
   return (
     <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center', opacity }}>
-      <div style={{ color: C.ink, fontSize: 150, fontWeight: 800, letterSpacing: -4, transform: `scale(${0.9 + 0.1 * pop})`, textShadow: `0 0 40px ${C.ink}66` }}>Leash</div>
-      <div style={{ color: C.ink, fontSize: 36, marginTop: 18, opacity: sub, transform: `translateY(${(1 - sub) * 12}px)` }}>
-        Your agent pays on its own. Above your line, it has to ask.
-      </div>
-      <div style={{ color: C.muted, fontSize: 22, marginTop: 40, opacity: foot, letterSpacing: 2 }}>
-        LIVE ON ARC MAINNET · REAL USDC · RULES ENFORCED BY A CONTRACT
+      <div style={{ color: C.ink, fontSize: 160, fontWeight: 800, letterSpacing: -5, transform: `scale(${0.9 + 0.1 * pop})`, ...glow() }}>LEASH</div>
+      <div style={{ color: C.ink, fontSize: 40, fontWeight: 700, marginTop: 14, opacity: rise(f, 16) }}>Give your agent a wallet. Not unlimited power.</div>
+      <Label style={{ marginTop: 34, opacity: rise(f, 36) }}>BUILT ON ARC · REAL USDC · ON-CHAIN ENFORCEMENT</Label>
+      <div style={{ marginTop: 38, padding: '14px 26px', borderRadius: 12, border: `1px solid ${C.border}`, background: C.panel, color: C.ink, fontSize: 30, opacity: rise(f, 56) }}>
+        Try it: <span style={{ fontWeight: 800 }}>rushibhosalepro.github.io/leash</span>
       </div>
     </AbsoluteFill>
   )
 }
 
-// 16–18 s: hand over to the walkthrough.
-const Chapter = () => {
+/** The voiceover as captions, bottom centre. */
+const Captions = () => {
   const f = useCurrentFrame()
-  const opacity = useSceneFade(S.chapter.len, 8, 6)
-  const line = interpolate(f, [10, 30], [0, 1], { ...clamp, easing: Easing.out(Easing.cubic) })
+  const t = f / 30
+  const line = CAPTIONS.find(([a, b]) => t >= a && t < b)
+  if (!line) return null
+  const [a, b, text] = line
+  const o = interpolate(t, [a, a + 0.15, b - 0.15, b], [0, 1, 1, 0], clamp)
   return (
-    <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center', opacity }}>
-      <div style={{ color: C.muted, fontSize: 20, letterSpacing: 6, marginBottom: 14 }}>THE PROBLEM, ON A LEASH</div>
-      <div style={{ color: C.ink, fontSize: 64, fontWeight: 800, textShadow: `0 0 26px ${C.ink}77` }}>What does it do?</div>
-      <div style={{ height: 4, width: 360 * line, background: C.ink, marginTop: 16, borderRadius: 2, boxShadow: `0 0 16px ${C.ink}` }} />
+    <AbsoluteFill style={{ justifyContent: 'flex-end', alignItems: 'center', paddingBottom: 70 }}>
+      <div style={{ maxWidth: 1500, textAlign: 'center', color: C.ink, fontSize: 34, lineHeight: 1.35, padding: '10px 22px', borderRadius: 10, background: '#000000b3', opacity: o }}>{text}</div>
     </AbsoluteFill>
   )
 }
 
-export const Hook = () => (
+export const Hook = ({ captions = true }: { captions?: boolean }) => (
   <AbsoluteFill style={{ fontFamily }}>
     <Backdrop />
-    <Sequence from={S.problem.from} durationInFrames={S.problem.len}><Problem /></Sequence>
-    <Sequence from={S.stake.from} durationInFrames={S.stake.len}><Stake /></Sequence>
-    <Sequence from={S.leashed.from} durationInFrames={S.leashed.len}><Leashed /></Sequence>
-    <Sequence from={S.name.from} durationInFrames={S.name.len}><Name /></Sequence>
-    <Sequence from={S.chapter.from} durationInFrames={S.chapter.len}><Chapter /></Sequence>
+    <Sequence from={S.hook.from} durationInFrames={S.hook.len}><HookScene /></Sequence>
+    <Sequence from={S.problem.from} durationInFrames={S.problem.len}><ProblemScene /></Sequence>
+    <Sequence from={S.meet.from} durationInFrames={S.meet.len}><MeetScene /></Sequence>
+    <Sequence from={S.proof.from} durationInFrames={S.proof.len}><ProofScene /></Sequence>
+    <Sequence from={S.rules.from} durationInFrames={S.rules.len}><RulesScene /></Sequence>
+    <Sequence from={S.close.from} durationInFrames={S.close.len}><CloseScene /></Sequence>
+    {captions && <Captions />}
   </AbsoluteFill>
 )
