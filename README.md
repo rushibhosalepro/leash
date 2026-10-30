@@ -6,7 +6,7 @@ Most agent wallets hand the agent a key and hope. Leash puts the rules in a cont
 
 **Status:** contract and agent live on **Arc mainnet** with real USDC · vault [`0xB9D9…8580`](https://explorer.arc.io/address/0xB9D96252a9cAB4CB97159cc395AF3C1597778580) · built in [Arc Studio](https://studio.arc.io/app/adcf767c-bf30-46c9-91f3-26916a400330) · **live app: [rushibhosalepro.github.io/leash](https://rushibhosalepro.github.io/leash/)** (no wallet needed to look around) · agent server hosted at `leash-agent.onrender.com`.
 
-**Watch the 3-minute demo:** [youtube.com/watch?v=wVGKH28e6N4](https://www.youtube.com/watch?v=wVGKH28e6N4)
+**Watch the demo:** [youtube.com/watch?v=wVGKH28e6N4](https://www.youtube.com/watch?v=wVGKH28e6N4)
 
 ---
 
