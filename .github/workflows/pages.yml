@@ -30,6 +30,8 @@ jobs:
       - run: bunx vite build
         env:
           PAGES_BASE: /leash/
+          # The hosted agent server (Render); the live site reads the link and agent log from it.
+          VITE_AGENT_URL: https://leash-agent.onrender.com
       - uses: actions/upload-pages-artifact@v3
         with:
           path: app/dist

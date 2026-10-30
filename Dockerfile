@@ -1,6 +1,6 @@
 # Leash agent server (mcp/). Build from the repo root: docker build .
 # Copies only what the server needs; the agent key and token come from the host's secrets, never from a file.
-FROM oven/bun:1.3-slim
+FROM oven/bun:1.4.0-slim
 
 WORKDIR /srv
 # The contract ABI compiled and tested in Arc Studio.
