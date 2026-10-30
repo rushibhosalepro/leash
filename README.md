@@ -4,7 +4,7 @@
 
 Most agent wallets hand the agent a key and hope. Leash puts the rules in a contract on Arc, so the agent can't raise its own limit, add a payee, or approve itself. The contract refuses.
 
-**Status:** contract and agent live on **Arc mainnet** with real USDC · vault [`0xB9D9…8580`](https://explorer.arc.io/address/0xB9D96252a9cAB4CB97159cc395AF3C1597778580) · built in [Arc Studio](https://studio.arc.io/app/adcf767c-bf30-46c9-91f3-26916a400330) · **live app: [rushibhosalepro.github.io/leash](https://rushibhosalepro.github.io/leash/)** (no wallet needed to look around).
+**Status:** contract and agent live on **Arc mainnet** with real USDC · vault [`0xB9D9…8580`](https://explorer.arc.io/address/0xB9D96252a9cAB4CB97159cc395AF3C1597778580) · built in [Arc Studio](https://studio.arc.io/app/adcf767c-bf30-46c9-91f3-26916a400330) · **live app: [rushibhosalepro.github.io/leash](https://rushibhosalepro.github.io/leash/)** (no wallet needed to look around) · agent server hosted at `leash-agent.onrender.com`.
 
 ---
 
@@ -77,7 +77,7 @@ What it **can never** do: raise a limit, add or unblock a payee, unfreeze, appro
 
 | Run | Paid alone | Held | Blocked | Wrong |
 |---|---|---|---|---|
-| Arc mainnet, real USDC, 2 agent payments | 1 | 1 | 0 | 0 |
+| Arc mainnet, real USDC, 3 agent payments (one through the hosted server) | 2 | 1 | 0 | 0 |
 | Arc testnet demo over MCP, 4 agent payments | 2 | 2 | 0 | 0 |
 | 50 labelled cases on a fresh vault (Arc testnet fork) | 18 | 22 | 10 | **0** |
 | Same 50 cases broadcast on Arc testnet | 6 | 34 | 10 | **12** |
@@ -87,7 +87,7 @@ The 12 wrong cases are worth explaining. The on-chain corpus run was interrupted
 
 ## Run it
 
-**Fastest:** open [rushibhosalepro.github.io/leash](https://rushibhosalepro.github.io/leash/). It reads the live mainnet vault straight from Arc, no wallet or server needed.
+**Fastest:** open [rushibhosalepro.github.io/leash](https://rushibhosalepro.github.io/leash/). It reads the live mainnet vault straight from Arc, and the agent server runs on Render, so nothing needs to run on your machine. The owner signs in with the owner wallet to see the agent link.
 
 To run it yourself (needs [Bun](https://bun.sh)):
 
@@ -139,7 +139,7 @@ forge test
 |---|---|
 | Contract | `Leash.sol`, Solidity 0.8.28, Foundry. One vault per owner and agent |
 | Chain | Arc mainnet (5042) and testnet (5042002), native USDC, Arc Memo contract |
-| Agent server | Bun, `@modelcontextprotocol/sdk` (Streamable HTTP), viem, SQLite for notes and failed attempts |
+| Agent server | Bun, `@modelcontextprotocol/sdk` (Streamable HTTP), viem, SQLite for notes and failed attempts. Hosted on Render (Docker, free plan), kept awake by a GitHub Actions ping |
 | Web app | React 18, Vite, wagmi v2, viem, ConnectKit, Tailwind |
 | Bridge | Arc App Kit (`@circle-fin/app-kit`), CCTP with the Forwarding Service |
 
@@ -174,12 +174,12 @@ All 16 are written up with steps to reproduce in [BUGS.md](BUGS.md), ready to se
 ## Limits, said plainly
 
 - The contract is tested, not audited. Use small amounts.
-- The agent server and its key run on the owner's machine. Freeze stops it instantly if that machine is compromised.
+- The hosted agent server holds the agent key as a Render secret. If it leaks, the contract still caps it: $0.25 a payment, $1 a day, only to saved payees, and Freeze stops it instantly. Only the owner, after a wallet signature, can see the agent link or change server settings.
 - The daily limit is a rolling 24 hours from the first payment, not calendar days.
 - Alerts (email or push when a payment is held) aren't built yet. Today the owner sees held payments in the app.
 
 ## What's next
 
 - Alerts when something is held, with approve and deny from the notification.
-- A hosted agent server, so a phone can approve a payment from anywhere.
+- Approve held payments from a phone notification.
 - A vault factory, so one owner can give each agent its own leash.
