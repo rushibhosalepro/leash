@@ -2,7 +2,7 @@
 // the real mainnet payments, what the agent can't do, and the close. Captions carry the voiceover
 // so the video still works muted.
 import type { CSSProperties, ReactNode } from 'react'
-import { AbsoluteFill, Easing, Sequence, interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion'
+import { AbsoluteFill, Audio, Easing, Sequence, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig } from 'remotion'
 import { loadFont } from '@remotion/google-fonts/JetBrainsMono'
 
 const { fontFamily } = loadFont('normal', { weights: ['400', '500', '700', '800'], subsets: ['latin'] })
@@ -259,8 +259,10 @@ const Captions = () => {
   )
 }
 
-export const Hook = ({ captions = true }: { captions?: boolean }) => (
+export const Hook = ({ captions = true, music = false }: { captions?: boolean; music?: boolean }) => (
   <AbsoluteFill style={{ fontFamily }}>
+    {/* Original music bed, made by scripts/make-music.ts and timed to these scenes. */}
+    {music && <Audio src={staticFile('leash-intro.wav')} />}
     <Backdrop />
     <Sequence from={S.hook.from} durationInFrames={S.hook.len}><HookScene /></Sequence>
     <Sequence from={S.problem.from} durationInFrames={S.problem.len}><ProblemScene /></Sequence>

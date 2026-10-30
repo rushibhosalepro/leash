@@ -3,8 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "music": "bun run scripts/make-music.ts",
     "studio": "remotion studio src/index.ts",
-    "render": "remotion render src/index.ts Hook out/leash-hook.mp4",
+    "render": "bun run music && remotion render src/index.ts Hook out/leash-intro-captions.mp4",
     "still": "remotion still src/index.ts Hook"
   },
   "dependencies": {
