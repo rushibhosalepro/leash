@@ -1,0 +1,11 @@
+**/node_modules
+**/.env
+**/.env.*
+!**/.env.example
+**/*.db
+**/*.db-*
+app/dist
+app/lib
+app/cache
+.git
+build-*
