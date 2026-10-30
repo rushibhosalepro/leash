@@ -23,7 +23,7 @@ https://rushibhosalepro.github.io/leash/
 ## Links
 
 - GitHub Repo: https://github.com/rushibhosalepro/leash
-- Video: (YouTube link, after recording)
+- Video: https://www.youtube.com/watch?v=wVGKH28e6N4
 - Other: https://studio.arc.io/app/adcf767c-bf30-46c9-91f3-26916a400330
 
 ---
@@ -71,7 +71,7 @@ The contract (`Leash.sol`), its 156 Foundry tests, a 50-case labelled corpus, an
 - **Contract (Arc mainnet):** [0xB9D96252a9cAB4CB97159cc395AF3C1597778580](https://explorer.arc.io/address/0xB9D96252a9cAB4CB97159cc395AF3C1597778580)
 - **Example transaction:** [0x29428fcea41f194ec775a1bbfb7ac76c0765e5ee273a479ebc3dd0a5f370da70](https://explorer.arc.io/tx/0x29428fcea41f194ec775a1bbfb7ac76c0765e5ee273a479ebc3dd0a5f370da70)
 - **Repo:** https://github.com/rushibhosalepro/leash
-- **Video:** (YouTube link)
+- **Video:** https://www.youtube.com/watch?v=wVGKH28e6N4
 
 ### Limits, said plainly
 
