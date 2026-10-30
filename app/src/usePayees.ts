@@ -1,13 +1,14 @@
-import { usePublicClient, useReadContracts } from 'wagmi'
+import { useReadContracts } from 'wagmi'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { LEASH_ABI, LEASH_EVENTS } from '@/leash-contract'
+import { LEASH_ABI } from '@/leash-contract'
+import { useVaultEvents } from '@/vaultEvents'
 import { useNetwork } from '@/network'
 import bundledPayees from '../../mcp/payees.json'
 import { AGENT_URL, agentHeaders } from '@/agentServer'
 
 // Names live in the local MCP server's payees.json (the contract only knows addresses); it only answers this app's origin.
 const PAYEES_ENDPOINT = `${AGENT_URL}/payees`
-// The hosted site has no agent server, so it shows the names as they were when it was built.
+// Without an agent server to ask, show the names as they were when the site was built.
 const BUNDLED = bundledPayees as { name: string; address: `0x${string}` }[]
 
 export type PayeeStatus = 'trusted' | 'allowed' | 'asks_first' | 'blocked'
@@ -23,19 +24,10 @@ const lower = (a: string) => a.toLowerCase()
 /** On-chain trusted / blocked lists. No getter exists, so rebuild from update events and keep what the contract still lists. */
 function useOnchainList(kind: 'trusted' | 'blocked') {
   const { network } = useNetwork()
-  const client = usePublicClient({ chainId: network.chain.id })
   const vault = network.vault
-  const { data: candidates } = useQuery({
-    queryKey: ['payees-onchain', kind, network.id, vault],
-    enabled: !!vault && !!client,
-    refetchInterval: 15000,
-    queryFn: async () => {
-      const logs = await client!.getContractEvents({
-        address: vault!, abi: LEASH_EVENTS, eventName: kind === 'trusted' ? 'AllowlistUpdated' : 'DenylistUpdated', fromBlock: network.fromBlock, toBlock: 'latest',
-      })
-      return [...new Set(logs.map(l => (l.args as { payee: `0x${string}` }).payee))]
-    },
-  })
+  const { data: events } = useVaultEvents()
+  const eventName = kind === 'trusted' ? 'AllowlistUpdated' : 'DenylistUpdated'
+  const candidates = events && [...new Set(events.filter(e => e.name === eventName).map(e => e.args.payee as `0x${string}`))]
   const { data: flags } = useReadContracts({
     contracts: (candidates ?? []).map(p => ({
       address: vault ?? undefined, abi: LEASH_ABI, chainId: network.chain.id,

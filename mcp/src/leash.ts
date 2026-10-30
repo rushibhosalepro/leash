@@ -2,7 +2,7 @@
 // whether a payment is paid, held for the owner, or blocked. Nothing here can raise a limit.
 import { readFileSync } from 'node:fs'
 import {
-  createPublicClient, createWalletClient, http, fallback, encodeFunctionData, decodeEventLog,
+  createPublicClient, createWalletClient, http, fallback, encodeFunctionData, decodeEventLog, parseEventLogs,
   keccak256, toBytes, toHex, hexToString, parseUnits, formatUnits, type Abi, type Hex,
 } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
@@ -62,6 +62,66 @@ const read = <T>(functionName: string, args: unknown[] = []) =>
 /** The vault owner, read live: the only wallet allowed to see the agent link and change server settings. */
 export const vaultOwner = () => read<Hex>('owner')
 
+// Arc's public RPCs cap eth_getLogs at a few thousand blocks (rpc.mainnet.arc.io under 10,000, drpc under 5,000) and
+// mainnet adds about two blocks a second, so one query from the deploy block soon fails everywhere. Read the vault's
+// events in 4,000-block chunks once, keep them, and from then on read only the new blocks.
+const CHUNK = 4_000n
+const PARALLEL = 4
+export interface VaultEvent { eventName: string; args: Record<string, unknown>; blockNumber: bigint; transactionHash: Hex; logIndex: number }
+const index = { scannedTo: FROM_BLOCK - 1n, events: [] as VaultEvent[], memos: new Map<Hex, string>(), times: new Map<bigint, number>() }
+let syncing: Promise<void> | null = null
+let lastSync = 0
+
+/** Brings the event index up to the latest block. Concurrent callers share one scan; a scan newer than `maxAgeMs` is reused. */
+export function syncEvents(maxAgeMs = 4_000): Promise<void> {
+  if (syncing) return syncing
+  if (Date.now() - lastSync < maxAgeMs) return Promise.resolve()
+  syncing = scanNewBlocks().finally(() => { syncing = null })
+  return syncing
+}
+
+async function scanNewBlocks() {
+  const head = await pub.getBlockNumber()
+  const ranges: [bigint, bigint][] = []
+  for (let from = index.scannedTo + 1n; from <= head; from += CHUNK) ranges.push([from, from + CHUNK - 1n < head ? from + CHUNK - 1n : head])
+  for (let i = 0; i < ranges.length; i += PARALLEL) {
+    const batch = ranges.slice(i, i + PARALLEL)
+    const results = await Promise.all(batch.map(([fromBlock, toBlock]) => Promise.all([
+      pub.getLogs({ address: VAULT, fromBlock, toBlock }),
+      pub.getLogs({ address: MEMO_ADDRESS, event: MEMO_EVENT, args: { target: VAULT }, fromBlock, toBlock }),
+    ])))
+    for (const [vaultLogs, memoLogs] of results) {
+      for (const l of parseEventLogs({ abi: LEASH_ABI, logs: vaultLogs }) as unknown as (VaultEvent & { logIndex: number })[]) {
+        index.events.push({ eventName: l.eventName, args: l.args, blockNumber: l.blockNumber, transactionHash: l.transactionHash, logIndex: l.logIndex })
+      }
+      for (const m of memoLogs) index.memos.set(m.transactionHash, hexToString(m.args.memo as Hex))
+    }
+    // Only move the mark once a whole batch succeeded, so a failed chunk is read again next time.
+    index.scannedTo = batch[batch.length - 1][1]
+  }
+  lastSync = Date.now()
+  const missing = [...new Set(index.events.map(e => e.blockNumber))].filter(b => !index.times.has(b))
+  await Promise.all(missing.map(async b => index.times.set(b, Number((await pub.getBlock({ blockNumber: b })).timestamp) * 1000)))
+}
+
+/** Every vault event with its block time and the agent's memo, for the web app. Public on-chain data. */
+export async function eventsSnapshot() {
+  await syncEvents()
+  return {
+    vault: VAULT,
+    from_block: FROM_BLOCK.toString(),
+    scanned_to: index.scannedTo.toString(),
+    events: index.events.map(e => ({
+      name: e.eventName,
+      args: Object.fromEntries(Object.entries(e.args).map(([k, v]) => [k, typeof v === 'bigint' ? v.toString() : v])),
+      block: e.blockNumber.toString(),
+      tx: e.transactionHash,
+      time: index.times.get(e.blockNumber) ?? null,
+      memo: index.memos.get(e.transactionHash) ?? null,
+    })),
+  }
+}
+
 // The contract has no getter for the payee lists, so rebuild them from the update events and confirm
 // each address against isAllowlisted / isDenylisted, which are the source of truth.
 async function payeeList(eventName: 'AllowlistUpdated' | 'DenylistUpdated', isIn: 'isAllowlisted' | 'isDenylisted') {
@@ -74,10 +134,8 @@ async function payeeList(eventName: 'AllowlistUpdated' | 'DenylistUpdated', isIn
 // Mirrors the contract's rolling one-hour window: only payments the agent made alone count, not owner approvals.
 async function paymentsInLastHour() {
   const paid = await vaultEvents('Paid')
-  const recent = paid.slice(-50)
-  const now = BigInt(Math.floor(Date.now() / 1000))
-  const stamps = await Promise.all(recent.map(l => pub.getBlock({ blockNumber: l.blockNumber }).then(b => b.timestamp)))
-  return stamps.filter(t => now - t < 3600n).length
+  const now = Date.now()
+  return paid.slice(-50).filter(l => now - (index.times.get(l.blockNumber) ?? 0) < 3_600_000).length
 }
 
 export async function getRules() {
@@ -232,12 +290,23 @@ export function noteOnPayment(ref: string, note: string) {
 async function sendPayment(payee: Hex, amountUsdc: string, reason: string): Promise<Record<string, unknown>> {
   const data = encodeFunctionData({ abi: LEASH_ABI, functionName: 'pay', args: [payee, toNative(amountUsdc), reason] })
   const memoId = keccak256(toBytes(`${AGENT}:${Date.now()}:${reason}`))
+  const started = Date.now()
   // Routed through Arc's Memo contract so the agent's reason is recorded on-chain with the call.
   const hash = await wallet.writeContract({
     address: MEMO_ADDRESS, abi: MEMO_ABI, functionName: 'memo',
     args: [VAULT, data, memoId, toHex(new TextEncoder().encode(reason))],
   })
-  const receipt = await pub.waitForTransactionReceipt({ hash })
+  const sentMs = Date.now() - started
+  // MCP clients give up on a call after about a minute, and a client that never hears back may pay again.
+  // So wait for the receipt only so long; after that, say it was sent and how to follow up.
+  const receipt = await pub.waitForTransactionReceipt({ hash, timeout: 35_000, pollingInterval: 1_000 }).catch(() => null)
+  console.log(`[pay] ${amountUsdc} USDC: sent in ${sentMs} ms, ${receipt ? `confirmed in ${Date.now() - started} ms` : 'not confirmed after 35 s'}`)
+  if (!receipt) {
+    return {
+      outcome: 'submitted', tx: hash, explorer: `${EXPLORER}/tx/${hash}`, amount_usdc: amountUsdc, payee, payee_name: nameOf(payee),
+      next: 'Sent, but the network has not confirmed it yet. Do not pay again: check leash_get_spending in a minute to see whether it was paid or held.',
+    }
+  }
   if (receipt.status !== 'success') return { outcome: 'failed', error: 'The transaction reverted on-chain.', tx: hash, explorer: `${EXPLORER}/tx/${hash}` }
 
   for (const log of receipt.logs) {
@@ -262,8 +331,9 @@ async function sendPayment(payee: Hex, amountUsdc: string, reason: string): Prom
   return { outcome: 'unknown', tx: hash, explorer: `${EXPLORER}/tx/${hash}` }
 }
 
-async function vaultEvents(eventName: string, args?: Record<string, unknown>) {
-  return pub.getContractEvents({ address: VAULT, abi: LEASH_ABI, eventName, args, fromBlock: FROM_BLOCK, toBlock: 'latest' })
+async function vaultEvents(eventName: string, args?: { id?: bigint }) {
+  await syncEvents()
+  return index.events.filter(e => e.eventName === eventName && (args?.id === undefined || e.args.id === args.id))
 }
 
 export async function paymentStatus(id: string) {
@@ -286,12 +356,11 @@ export async function pendingForOwner() {
 }
 
 export async function recentSpending(limit: number) {
-  const [paid, held, blocked, memos, remaining] = await Promise.all([
+  const [paid, held, blocked, remaining] = await Promise.all([
     vaultEvents('Paid'), vaultEvents('Held'), vaultEvents('Blocked'),
-    pub.getContractEvents({ address: MEMO_ADDRESS, abi: [MEMO_EVENT], eventName: 'Memo', args: { target: VAULT }, fromBlock: FROM_BLOCK, toBlock: 'latest' }),
     read<bigint>('remainingToday'),
   ])
-  const memoByTx = new Map(memos.map(m => [m.transactionHash, hexToString((m.args as { memo: Hex }).memo)]))
+  const memoByTx = index.memos
   const log = recentAttempts(VAULT)
   const notesByTx = new Map(log.filter(a => a.tx_hash).map(a => [a.tx_hash!.toLowerCase(), a.notes.map(n => n.note)]))
   const failed = log.filter(a => a.outcome === 'failed').slice(0, limit).map(a => ({

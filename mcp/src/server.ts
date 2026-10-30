@@ -7,7 +7,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js'
 import { verifyMessage, type Hex } from 'viem'
 import { z } from 'zod'
-import { AGENT, VAULT, ON_MAINNET, vaultOwner, getRules, checkPayee, checkPayment, pay, noteOnPayment, paymentStatus, pendingForOwner, recentSpending, listPayeesWithStatus } from './leash'
+import { AGENT, VAULT, ON_MAINNET, vaultOwner, syncEvents, eventsSnapshot, getRules, checkPayee, checkPayment, pay, noteOnPayment, paymentStatus, pendingForOwner, recentSpending, listPayeesWithStatus } from './leash'
 import { recentAttempts } from './db'
 import { listPayees, upsertPayee, removePayee, resolvePayee } from './payees'
 
@@ -190,6 +190,11 @@ async function appApi(req: Request, url: URL): Promise<Response> {
     return Response.json(linkInfo(owner), { headers })
   }
   if (url.pathname === '/agent-log') return Response.json(recentAttempts(VAULT), { headers })
+  // The vault's on-chain history, from the server's event index (public data; saves every browser a long scan).
+  if (url.pathname === '/events') {
+    try { return Response.json(await eventsSnapshot(), { headers }) }
+    catch (err) { return Response.json({ error: (err as Error).message }, { status: 503, headers }) }
+  }
 
   try {
     if (req.method === 'GET') return Response.json(listPayees(), { headers })
@@ -215,7 +220,7 @@ Bun.serve({
     const url = new URL(req.url)
     // Health check for the host. Says nothing about the link.
     if (url.pathname === '/' || url.pathname === '/health') return new Response('ok')
-    if (['/link', '/payees', '/agent-log', '/session'].includes(url.pathname)) return appApi(req, url)
+    if (['/link', '/payees', '/agent-log', '/session', '/events'].includes(url.pathname)) return appApi(req, url)
 
     const [, prefix, token] = url.pathname.split('/')
     if (!LINK_ON || prefix !== 'mcp' || !token || !tokenMatches(token)) return new Response('Not found', { status: 404 })
@@ -231,6 +236,12 @@ Bun.serve({
     }
   },
 })
+
+// Keep the event index warm, so tools and the web app never wait on a full scan.
+const warm = () => syncEvents(0).catch(err => console.log(`[events] scan failed, retrying: ${(err as Error).message.split('\n')[0]}`))
+const firstScan = Date.now()
+void warm().then(() => console.log(`[events] indexed from block ${process.env.LEASH_MAINNET_FROM_BLOCK ?? process.env.LEASH_FROM_BLOCK} in ${Date.now() - firstScan} ms`))
+setInterval(warm, 15_000)
 
 console.log(`Leash MCP listening on ${HOST}:${PORT}${OWNER_SIGNIN ? ' (hosted: owner signs in to see the link)' : ''}`)
 console.log(`${ON_MAINNET ? 'Arc MAINNET' : 'Arc testnet'} · vault ${VAULT} · agent ${AGENT}`)
