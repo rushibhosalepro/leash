@@ -11,7 +11,8 @@ import { AGENT, VAULT, ON_MAINNET, vaultOwner, getRules, checkPayee, checkPaymen
 import { recentAttempts } from './db'
 import { listPayees, upsertPayee, removePayee, resolvePayee } from './payees'
 
-const PORT = Number(process.env.MCP_PORT ?? 8787)
+// Hosts like Render pass the port in PORT.
+const PORT = Number(process.env.PORT ?? process.env.MCP_PORT ?? 8787)
 const HOST = process.env.MCP_HOST ?? '127.0.0.1'
 // The address agents use to reach this server; on a host, its public https URL.
 const PUBLIC_URL = (process.env.PUBLIC_URL ?? `http://127.0.0.1:${PORT}`).replace(/\/$/, '')
